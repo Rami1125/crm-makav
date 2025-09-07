@@ -646,19 +646,19 @@
         
         .form-group label {
             display: block;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             color: var(--brand);
         }
         
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
             border: 1px solid #e6eef8;
             background: #fbfdff;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
         }
         .form-warning {
@@ -956,7 +956,7 @@
         };
 
         // Assuming these new headers are in the sheet
-        const NEW_HEADERS = ['סוג פעולה', 'מכולה ירדה', 'מכולה עלתה', 'סטטוס ביצוע', 'הזמנה מקושרת', 'הערות מערכת', 'שם סוכן'];
+        const NEW_HEADERS = ['סוג פעולה', 'מכולה ירדה', 'מכולה עלתה', 'סטטוס ביצוע', 'הזמנה מקושרת', 'הערות מערכת', 'שם סוכן', 'שעת אספקה'];
 
         const whatsappTemplates = [
             { title: "בחר תבנית...", text: "" },
@@ -1310,12 +1310,13 @@
         }
 
         // ========== DATE FORMATTING ==========
-        function formatDateTime(value) {
+        function formatDateTime(value, includeTime = true) {
             if (!value && value !== 0) return "";
             let d = (value instanceof Date) ? value : new Date(value);
             if (isNaN(d.getTime())) return value;
             try {
                 const dateStr = d.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "numeric" });
+                if (!includeTime) return dateStr;
                 const timeStr = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
                 if (d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0) return dateStr;
                 return `${dateStr}, ${timeStr}`;
@@ -1356,7 +1357,12 @@
                 const cells = displayHeaders.map(h => {
                     const v = rowObj[h];
                     let content = v === null || v === undefined ? "" : v;
-                    if (looksLikeDateHeader(h)) content = formatDateTime(v);
+                     if (h === 'תאריך') {
+                        content = formatDateTime(v, false);
+                        if(rowObj['שעת אספקה']) content += ` ${rowObj['שעת אספקה']}`;
+                    } else if (looksLikeDateHeader(h)) {
+                        content = formatDateTime(v);
+                    }
                     if (String(h).includes("טלפון") && v) content = `<a href="tel:${v}" onclick="event.stopPropagation()">${v}</a>`;
                     if (String(h).includes("כתובת") && v) content = `<button class="btn secondary" style="padding: 4px 8px; font-size: 12px;" onclick="event.stopPropagation(); showMap('${encodeURIComponent(v)}')">מפה</button>`;
                     return `<td>${content}</td>`;
@@ -1750,7 +1756,7 @@
             isFullFormVisible = false;
             const isEdit = editIndex !== null;
             const data = initialData || {};
-            const standardFields = headers.filter(h => !NEW_HEADERS.includes(h) && h !== 'שם סוכן');
+            const standardFields = headers.filter(h => !NEW_HEADERS.includes(h));
             const agentHeader = headers.find(h => h === 'שם סוכן');
 
             let formHtml = `
@@ -1772,7 +1778,7 @@
             const actionType = data['סוג פעולה'] || 'הורדה';
             formHtml += `<div class="form-group">
                 <label for="field-סוג_פעולה">סוג פעולה</label>
-                <select id="field-סוג_פעולה" name="סוג פעולה" class="form-control" onchange="updateDynamicFormFields(this.value, {}, ${isFullFormVisible})">
+                <select id="field-סוג_פעולה" name="סוג פעולה" class="form-control" onchange="updateDynamicFormFields(this.value, {})">
                     <option value="הורדה" ${actionType === 'הורדה' ? 'selected' : ''}>הורדה</option>
                     <option value="החלפה" ${actionType === 'החלפה' ? 'selected' : ''}>החלפה</option>
                     <option value="העלאה" ${actionType === 'העלאה' ? 'selected' : ''}>העלאה</option>
@@ -1784,12 +1790,15 @@
                 const agentVal = data['שם סוכן'] || '';
                 formHtml += `<div class="form-group">
                     <label for="field-שם סוכן">שם סוכן</label>
-                    <select id="field-שם סוכן" name="שם סוכן">
+                    <select id="field-שם סוכן" name="שם סוכן" class="form-control">
                         <option value="">בחר סוכן</option>
                         <option value="1-אגבאריה/שארק" ${agentVal === '1-אגבאריה/שארק' ? 'selected' : ''}>1-אגבאריה/שארק</option>
                         <option value="2=מוחמד/שארק" ${agentVal === '2=מוחמד/שארק' ? 'selected' : ''}>2=מוחמד/שארק</option>
                     </select>
                 </div>`;
+            } else {
+                // Add a placeholder if the column doesn't exist yet
+                formHtml += '<div></div>';
             }
             
             // Other standard fields
@@ -1799,10 +1808,23 @@
                 const isDateField = looksLikeDateHeader(h);
                 const inputType = isDateField ? 'date' : 'text';
                 const displayValue = isDateField && val ? new Date(val).toISOString().split('T')[0] : val;
-                formHtml += `<div class="form-group">
-                    <label for="field-${h}">${h}</label>
-                    <input type="${inputType}" id="field-${h}" name="${h}" value="${displayValue}">
-                </div>`;
+
+                if (h === 'תאריך') {
+                     const timeVal = data['שעת אספקה'] || '';
+                     formHtml += `<div class="form-group">
+                        <label for="field-תאריך">תאריך</label>
+                        <input type="date" id="field-תאריך" name="תאריך" value="${displayValue}">
+                     </div>`;
+                     formHtml += `<div class="form-group">
+                        <label for="field-שעת אספקה">שעת אספקה</label>
+                        <input type="time" id="field-שעת אספקה" name="שעת אספקה" value="${timeVal}">
+                     </div>`;
+                } else {
+                    formHtml += `<div class="form-group">
+                        <label for="field-${h}">${h}</label>
+                        <input type="${inputType}" id="field-${h}" name="${h}" value="${displayValue}">
+                    </div>`;
+                }
             });
             
             formHtml += `</div><div class="form-grid" id="dynamic-fields-container"></div>`;
@@ -1813,7 +1835,7 @@
             const buttonText = isEdit ? 'שמור שינויים' : 'צור הזמנה';
             const footer = `
                 <div>
-                    <button type="button" class="btn secondary" onclick="toggleFullForm(true)">הצג את כל הטופס</button>
+                    <button type="button" class="btn secondary" onclick="toggleFullForm()">הצג את כל הטופס</button>
                 </div>
                 <div>
                     <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
@@ -1821,23 +1843,30 @@
                 </div>`;
 
             showModal(title, formHtml, footer);
-            updateDynamicFormFields(actionType, data, isFullFormVisible);
+            updateDynamicFormFields(actionType, data);
         }
         
-        function toggleFullForm(show) {
-            isFullFormVisible = show;
+        function toggleFullForm() {
+            isFullFormVisible = !isFullFormVisible;
             const actionType = document.getElementById('field-סוג_פעולה').value;
-            // We pass an empty object because we don't need to populate data, just show the fields
-            updateDynamicFormFields(actionType, {}, isFullFormVisible); 
+             const button = modalFooter.querySelector('button');
+            button.textContent = isFullFormVisible ? 'הסתר שדות מיותרים' : 'הצג את כל הטופס';
+            // Repopulate form with existing data
+            const currentData = {};
+            const formData = new FormData(modalForm);
+            for(let [key, value] of formData.entries()) {
+                currentData[key] = value;
+            }
+            updateDynamicFormFields(actionType, currentData); 
         }
 
-        function updateDynamicFormFields(actionType, data = {}, forceShowAll = false) {
+        function updateDynamicFormFields(actionType, data = {}) {
             const container = document.getElementById('dynamic-fields-container');
             if (!container) return;
             
             let fieldsHtml = '';
-            const showDropped = forceShowAll || actionType === 'הורדה' || actionType === 'החלפה';
-            const showPickedUp = forceShowAll || actionType === 'העלאה' || actionType === 'החלפה';
+            const showDropped = isFullFormVisible || actionType === 'הורדה' || actionType === 'החלפה';
+            const showPickedUp = isFullFormVisible || actionType === 'העלאה' || actionType === 'החלפה';
 
             if (showDropped) {
                 fieldsHtml += `<div class="form-group">
