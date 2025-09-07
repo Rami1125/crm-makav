@@ -9,11 +9,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --brand: #0b72b9;
             --accent: #ff9f1c;
-            --bg: #f4f7fb;
+            --bg: #eef2f7; /* Deeper background */
             --card: #ffffff;
             --muted: #6b7280;
             --radius: 12px;
@@ -32,6 +33,11 @@
             --status-overdue-text: #c5221f;
             --status-pending: #e0f7fa;
             --status-pending-text: #006064;
+
+            /* צבעי סוג פעולה */
+            --type-download: rgba(76, 175, 80, 0.1);
+            --type-swap: rgba(255, 235, 59, 0.15);
+            --type-pickup: rgba(244, 67, 54, 0.1);
         }
 
         @keyframes pulse-red {
@@ -51,9 +57,9 @@
             padding: 18px;
             font-family: 'Assistant', "Heebo", "Alef", Arial, sans-serif;
             background: var(--bg);
-            color: #0b1721;
+            color: #1a202c; /* Darker text */
             direction: rtl;
-            font-weight: 600;
+            font-weight: 700; /* Bolder base font */
         }
 
         /* Header */
@@ -110,6 +116,9 @@
             padding: 12px;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .kpi {
@@ -143,11 +152,49 @@
             color: white;
         }
 
-
         .kpi-number {
             font-size: 22px;
             font-weight: 700;
         }
+
+        /* Insights section */
+        .insights-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .insight-card {
+            background-color: #f8faff;
+            border-radius: var(--radius);
+            padding: 12px;
+            border: 1px solid #eef2f7;
+        }
+        .insight-title {
+            font-weight: 700;
+            color: var(--brand);
+            margin-bottom: 8px;
+        }
+        .insight-list {
+            font-size: 14px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .insight-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            cursor: pointer;
+        }
+        .insight-item:hover {
+            background-color: #eef2f7;
+        }
+        .insight-item-label {
+            color: #334155;
+        }
+        .insight-item-value {
+            font-weight: 700;
+        }
+
 
         /* Main content */
         .main {
@@ -155,7 +202,6 @@
             padding: 12px;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            overflow-x: auto;
         }
 
         .toolbar {
@@ -181,23 +227,32 @@
             border: 1px solid #e6eef8;
             background: #fbfdff;
         }
+        
+        /* Table Styling */
+        .table-container {
+            max-width: 100%;
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius);
+            padding: 8px;
+        }
 
         .table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 0 8px;
+            border-spacing: 0 4px; /* separation between rows */
         }
         
         .table thead tr th {
              border-bottom: 2px solid #eef5fb;
+             font-size: 14px;
         }
 
         .table th, .table td {
-            padding: 16px 10px;
+            padding: 14px 8px;
             text-align: center;
-            font-size: 15px;
+            font-size: 14px;
             white-space: nowrap;
-            border-bottom: 1px solid #eef5fb;
         }
         
         .table tbody tr {
@@ -205,14 +260,25 @@
             transition: all 0.2s ease-in-out;
             background-color: var(--card);
             border-radius: var(--radius);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid transparent;
         }
-        
+
+        .table tbody tr td {
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+
         .table tbody tr:hover {
             background-color: #f5faff;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             transform: translateY(-2px);
             z-index: 10;
             position: relative;
+            border-color: var(--brand);
         }
         
         .table th {
@@ -225,6 +291,10 @@
             background-color: #fffde7 !important; /* Yellow marker effect */
             box-shadow: 0 0 0 2px var(--accent);
         }
+
+        .row-type-הורדה { background-color: var(--type-download); }
+        .row-type-החלפה { background-color: var(--type-swap); }
+        .row-type-העלאה { background-color: var(--type-pickup); }
         
         /* Conditional Row Styling */
         .row-overdue {
@@ -232,19 +302,15 @@
             font-weight: 700;
             color: var(--status-overdue-text);
         }
-        .row-open {
-             background-color: rgba(230, 244, 234, 0.5);
-        }
         .row-pending {
-            background-color: var(--status-pending);
+            background-color: var(--status-pending) !important;
             color: var(--status-pending-text);
         }
         .row-closed {
             text-decoration: line-through;
             color: #b0bec5;
-            background-color: #fafafa;
+            background-color: #fafafa !important;
         }
-
 
         /* Right panel - notifications & tools */
         .right {
@@ -833,11 +899,11 @@
         </div>
 
         <div class="controls">
-            <input id="globalSearch" class="search" placeholder="חפש הזמנה..." oninput="renderFilteredData()" />
-            <button class="btn" onclick="showReportsPage()">דוחות</button>
-            <button class="btn" onclick="showOverdueManagementPage()">ניהול חריגות</button>
-            <button class="btn" onclick="refresh()">רענן</button>
-            <button class="btn secondary" onclick="openNewOrder()">הזמנה חדשה</button>
+            <input id="globalSearch" class="search" placeholder="חפש הזמנה..." />
+            <button class="btn" id="reportsBtn">דוחות</button>
+            <button class="btn" id="overdueBtn">ניהול חריגות</button>
+            <button class="btn" id="refreshBtn">רענן</button>
+            <button class="btn secondary" id="newOrderBtn">הזמנה חדשה</button>
             <button class="btn secondary" id="installButton" style="display:none;">התקן אפליקציה</button>
         </div>
     </div>
@@ -846,11 +912,16 @@
         <div class="left">
             <div style="font-weight:700;margin-bottom:8px">מדדי ביצוע (KPIs)</div>
             <div class="kpi">
-                <div class="kpi-card" id="kpi-total" onclick="filterByKpi('total')"><div style="color:var(--muted)">סה״כ הזמנות</div><div id="kTotal" class="kpi-number">—</div></div>
-                <div class="kpi-card" id="kpi-open" onclick="filterByKpi('open')"><div style="color:var(--muted)">הזמנות פתוחות</div><div id="kOpen" class="kpi-number">—</div></div>
-                <div class="kpi-card" id="kpi-overdue" onclick="filterByKpi('overdue')"><div style="color:var(--muted)">הזמנות חורגות</div><div id="kOver" class="kpi-number">—</div></div>
-                <div class="kpi-card" id="kpi-active" onclick="filterByKpi('active')"><div style="color:var(--muted)">לקוחות פעילים</div><div id="kActiveCustomers" class="kpi-number">—</div></div>
+                <div class="kpi-card" id="kpi-total"><div style="color:var(--muted)">סה״כ הזמנות</div><div id="kTotal" class="kpi-number">—</div></div>
+                <div class="kpi-card" id="kpi-open"><div style="color:var(--muted)">הזמנות פתוחות</div><div id="kOpen" class="kpi-number">—</div></div>
+                <div class="kpi-card" id="kpi-overdue"><div style="color:var(--muted)">הזמנות חורגות</div><div id="kOver" class="kpi-number">—</div></div>
+                <div class="kpi-card" id="kpi-active"><div style="color:var(--muted)">לקוחות פעילים</div><div id="kActiveCustomers" class="kpi-number">—</div></div>
                 <div class="kpi-card" style="grid-column: 1 / -1;"><div style="color:var(--muted)">מכולות בשימוש</div><div id="kContainers" class="kpi-number">—</div></div>
+            </div>
+             <div class="insights-section">
+                <div id="locationInsight" class="insight-card"></div>
+                <div id="pendingInsight" class="insight-card"></div>
+                <div id="recentInsight" class="insight-card"></div>
             </div>
         </div>
 
@@ -860,7 +931,7 @@
                 <div style="flex:1"></div>
                 <div class="filter-controls">
                     <label>
-                        <input type="checkbox" id="showClosedCheckbox" onchange="renderFilteredData()">
+                        <input type="checkbox" id="showClosedCheckbox">
                         הצג הזמנות סגורות
                     </label>
                 </div>
@@ -869,17 +940,19 @@
 
             <div id="alertsContainer" style="margin-bottom: 12px;"></div>
             
-            <table class="table" id="ordersTable">
-                <thead id="tHead"></thead>
-                <tbody id="tBody"></tbody>
-            </table>
+            <div class="table-container">
+                <table class="table" id="ordersTable">
+                    <thead id="tHead"></thead>
+                    <tbody id="tBody"></tbody>
+                </table>
+            </div>
         </div>
 
         <div class="right">
             <div style="font-weight:700;margin-bottom:6px">הערות להזמנות</div>
             <div style="margin-top:8px; display:flex; gap:8px; margin-bottom: 12px;">
-                <button class="btn" onclick="promptForNote(null)">הוסף הערה כללית</button>
-                <button class="btn secondary" onclick="loadDevNotes()">טען הערות</button>
+                <button class="btn" id="addNoteBtn">הוסף הערה כללית</button>
+                <button class="btn secondary" id="loadNotesBtn">טען הערות</button>
             </div>
             <table class="notes-table">
                 <thead><tr><th>תאריך</th><th>לקוח</th><th>הערה</th></tr></thead>
@@ -896,7 +969,7 @@
                         <input type="checkbox" id="alertNewOrder" checked> הזמנה חדשה נוצרת
                     </label>
                 </div>
-                <button class="btn" style="margin-top:10px;" onclick="saveAlertSettings()">שמור הגדרות</button>
+                <button class="btn" style="margin-top:10px;" id="saveAlertsBtn">שמור הגדרות</button>
             </div>
         </div>
     </div>
@@ -908,8 +981,8 @@
             <div style="font-size:14px;color:var(--muted)">גישה מהירה ישירות מהמסך הראשי שלך</div>
         </div>
         <div class="install-prompt-actions">
-            <button class="btn secondary" onclick="dismissInstallPrompt()">לא עכשיו</button>
-            <button class="btn" onclick="installPWA()">התקן</button>
+            <button class="btn secondary" id="dismissInstallBtn">לא עכשיו</button>
+            <button class="btn" id="installPwaBtn">התקן</button>
         </div>
     </div>
 
@@ -927,11 +1000,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // ========== CONFIG ==========
-        const API_URL = "https://script.google.com/macros/s/AKfycbydmQ1jF7rL19QS_NY84Rgvzddv2awOlPyjwW4QOic1qGairdmMjJFMG0FzsFu4blqlSw/exec";
-        
         // ========== STATE ==========
         let rawData = [];
         let headers = [];
@@ -942,6 +1011,9 @@
         let activeKpiFilter = null;
         let uniqueClientNames = new Set();
         let isFullFormVisible = false;
+        
+        const API_URL = "https://script.google.com/macros/s/AKfycbydmQ1jF7rL19QS_NY84Rgvzddv2awOlPyjwW4QOic1qGairdmMjJFMG0FzsFu4blqlSw/exec";
+        
         const alertSettings = {
             overdue: true,
             newOrder: true,
@@ -1335,17 +1407,17 @@
             }
             
             const displayHeaders = hdrs.filter(h => !NEW_HEADERS.includes(h) || ['סוג פעולה', 'מכולה ירדה', 'מכולה עלתה'].includes(h));
-            thead.innerHTML = "<tr>" + displayHeaders.map(h => `<th>${h}</th>`).join("") + "<th>סטטוס</th><th>פעולות</th></tr>";
+            thead.innerHTML = "<tr><th>#</th>" + displayHeaders.map(h => `<th>${h}</th>`).join("") + "<th>סטטוס</th><th>פעולות</th></tr>";
             
             if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="${displayHeaders.length + 2}" style="padding: 20px; color: var(--muted);">לא נמצאו הזמנות התואמות לסינון.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${displayHeaders.length + 3}" style="padding: 20px; color: var(--muted);">לא נמצאו הזמנות התואמות לסינון.</td></tr>`;
                 return;
             }
 
-            data.forEach((rowObj) => {
+            data.forEach((rowObj, i) => {
                 const original_idx = rawData.indexOf(rowObj);
                 const statusKey = getStatusKey(rowObj['סטטוס'], rowObj['סטטוס ביצוע']);
-                const rowClass = `row-${statusKey}`;
+                const rowClass = `row-${statusKey} row-type-${rowObj['סוג פעולה'] || ''}`;
 
                 const cells = displayHeaders.map(h => {
                     const v = rowObj[h];
@@ -1372,7 +1444,7 @@
                 const rowHtml = document.createElement('tr');
                 rowHtml.className = rowClass;
                 rowHtml.onclick = () => showCustomerCard(original_idx);
-                rowHtml.innerHTML = `${cells}${statusCell}${actionCell}`;
+                rowHtml.innerHTML = `<td style="font-weight: 700; color: var(--muted);">${i + 1}</td>${cells}${statusCell}${actionCell}`;
                 tbody.appendChild(rowHtml);
             });
         }
@@ -1432,7 +1504,7 @@
             }
         }
 
-        // ========== KPI + ALERTS ==========
+        // ========== KPI + ALERTS + INSIGHTS ==========
         function computeKPIs(data) {
             const total = data.length;
             const activeOrders = data.filter(r => getStatusKey(r['סטטוס']) !== 'closed');
@@ -1443,7 +1515,6 @@
             document.getElementById("kOpen").innerText = openCount;
             document.getElementById("kOver").innerText = overdueOrders.length;
 
-            // Advanced KPIs
             const customerKey = headers.find(h => h.includes('שם לקוח'));
             const containerKey = headers.find(h => h.includes('מספר מכולה'));
 
@@ -1468,6 +1539,62 @@
                     }
                 });
             }
+
+            // Insights
+            updateInsights(data);
+        }
+
+        function updateInsights(data) {
+            const locationInsightContainer = document.getElementById('locationInsight');
+            const locationCounts = {};
+            const activeOrders = data.filter(r => getStatusKey(r['סטטוס']) !== 'closed' && r['כתובת']);
+            activeOrders.forEach(r => {
+                const city = (r['כתובת'] || '').split(',')[0].trim();
+                if (city) locationCounts[city] = (locationCounts[city] || 0) + 1;
+            });
+            let locationHtml = '<div class="insight-title">📍 פילוח גיאוגרפי</div><div class="insight-list">';
+            if (Object.keys(locationCounts).length > 0) {
+                Object.entries(locationCounts).forEach(([city, count]) => {
+                    locationHtml += `<div class="insight-item" onclick="showCityOrders('${city}')"><span class="insight-item-label">${city}</span><span class="insight-item-value">${count}</span></div>`;
+                });
+            } else {
+                locationHtml += '<p style="font-size:14px; color: var(--muted);">אין נתונים</p>';
+            }
+            locationInsightContainer.innerHTML = locationHtml + '</div>';
+
+            const pendingInsightContainer = document.getElementById('pendingInsight');
+            const pendingOrders = data.filter(r => r['סטטוס ביצוע'] === 'ממתינה לביצוע');
+            let pendingHtml = '<div class="insight-title">⏳ הזמנות עתידיות</div><div class="insight-list">';
+            if (pendingOrders.length > 0) {
+                pendingOrders.forEach(order => {
+                    pendingHtml += `<div class="insight-item" onclick="showCustomerCard(${rawData.indexOf(order)})"><span class="insight-item-label">${order['שם לקוח']}</span><span class="insight-item-value">${order['סוג פעולה']}</span></div>`;
+                });
+            } else {
+                 pendingHtml += '<p style="font-size:14px; color: var(--muted);">אין הזמנות ממתינות</p>';
+            }
+            pendingInsightContainer.innerHTML = pendingHtml + '</div>';
+
+            const recentInsightContainer = document.getElementById('recentInsight');
+            const recentActivity = data.slice().sort((a, b) => new Date(b['תאריך']) - new Date(a['תאריך'])).slice(0, 3);
+            let recentHtml = '<div class="insight-title">⏱️ פעילות אחרונה</div><div class="insight-list">';
+             if (recentActivity.length > 0) {
+                recentActivity.forEach(order => {
+                    recentHtml += `<div class="insight-item" onclick="showCustomerCard(${rawData.indexOf(order)})"><span class="insight-item-label">${order['שם לקוח']}</span><span class="insight-item-value">${formatDateTime(order['תאריך'], false)}</span></div>`;
+                });
+            } else {
+                 recentHtml += '<p style="font-size:14px; color: var(--muted);">אין נתונים</p>';
+            }
+            recentInsightContainer.innerHTML = recentHtml + '</div>';
+        }
+        
+        function showCityOrders(city) {
+            const cityOrders = rawData.filter(r => r['כתובת'] && r['כתובת'].startsWith(city));
+            let listHtml = '';
+            cityOrders.forEach(order => {
+                listHtml += `<li>${order['שם לקוח']} - ${order['מספר מכולה ירדה'] || ''}</li>`;
+            });
+            const body = `<p>רשימת לקוחות ב<strong>${city}</strong>:</p><ul>${listHtml}</ul>`;
+            showModal(`לקוחות ב${city}`, body, `<button class="btn secondary" onclick="closeModal()">סגור</button>`);
         }
 
 
@@ -1759,7 +1886,6 @@
                 </div>
                 <div class="form-grid">`;
             
-            // Client Name first
             const clientNameVal = data['שם לקוח'] || '';
             formHtml += `<div class="form-group autocomplete-container full-width">
                 <label for="field-שם לקוח">שם לקוח</label>
@@ -1767,7 +1893,6 @@
                 <div class="autocomplete-results" id="autocomplete-results"></div>
             </div>`;
 
-            // Action Type Dropdown
             const actionType = data['סוג פעולה'] || 'הורדה';
             formHtml += `<div class="form-group">
                 <label for="field-סוג_פעולה">סוג פעולה</label>
@@ -1778,7 +1903,6 @@
                 </select>
             </div>`;
 
-            // Agent Dropdown
              if (agentHeader) {
                 const agentVal = data['שם סוכן'] || '';
                 formHtml += `<div class="form-group">
@@ -1793,7 +1917,6 @@
                 formHtml += '<div></div>';
             }
             
-            // Other standard fields
             standardFields.forEach(h => {
                 if (h === 'שם לקוח') return;
                 const val = data[h] || '';
@@ -2107,29 +2230,53 @@
 
         // Initial load
         document.addEventListener('DOMContentLoaded', function() {
-            // DEFAULTS
-            Chart.defaults.font.family = "Assistant";
-            Chart.defaults.font.weight = "bold";
-            Chart.defaults.font.size = 14;
-            Chart.defaults.color = "#333";
-            
-            loadAlertSettings();
-            refresh();
-            loadDevNotes();
-            initRealTimeUpdates();
-            
-            if ('serviceWorker' in navigator) {
-                const swScript = `
-                    self.addEventListener('install', event => { self.skipWaiting(); });
-                    self.addEventListener('activate', event => {});
-                    self.addEventListener('fetch', event => {});
-                `;
-                const blob = new Blob([swScript], { type: 'application/javascript' });
-                const swURL = URL.createObjectURL(blob);
+            try {
+                // DEFAULTS
+                if (typeof Chart !== 'undefined') {
+                    Chart.defaults.font.family = "Assistant";
+                    Chart.defaults.font.weight = "bold";
+                    Chart.defaults.font.size = 14;
+                    Chart.defaults.color = "#333";
+                }
                 
-                navigator.serviceWorker.register(swURL)
-                    .then(reg => console.log('SW registered:', reg))
-                    .catch(err => console.log('SW registration failed:', err));
+                loadAlertSettings();
+                refresh();
+                loadDevNotes();
+                initRealTimeUpdates();
+                
+                // Event Listeners
+                document.getElementById('globalSearch').addEventListener('input', renderFilteredData);
+                document.getElementById('showClosedCheckbox').addEventListener('change', renderFilteredData);
+                document.getElementById('reportsBtn').addEventListener('click', showReportsPage);
+                document.getElementById('overdueBtn').addEventListener('click', showOverdueManagementPage);
+                document.getElementById('refreshBtn').addEventListener('click', refresh);
+                document.getElementById('newOrderBtn').addEventListener('click', () => openNewOrder());
+                document.getElementById('addNoteBtn').addEventListener('click', () => promptForNote(null));
+                document.getElementById('loadNotesBtn').addEventListener('click', loadDevNotes);
+                document.getElementById('saveAlertsBtn').addEventListener('click', saveAlertSettings);
+                document.getElementById('dismissInstallBtn').addEventListener('click', dismissInstallPrompt);
+                document.getElementById('installPwaBtn').addEventListener('click', installPWA);
+                document.querySelectorAll('.kpi-card').forEach(card => {
+                    const type = card.id.split('-')[1];
+                    card.addEventListener('click', () => filterByKpi(type));
+                });
+                
+                if ('serviceWorker' in navigator) {
+                    const swScript = `
+                        self.addEventListener('install', event => { self.skipWaiting(); });
+                        self.addEventListener('activate', event => {});
+                        self.addEventListener('fetch', event => {});
+                    `;
+                    const blob = new Blob([swScript], { type: 'application/javascript' });
+                    const swURL = URL.createObjectURL(blob);
+                    
+                    navigator.serviceWorker.register(swURL)
+                        .then(reg => console.log('SW registered:', reg))
+                        .catch(err => console.log('SW registration failed:', err));
+                }
+            } catch(err) {
+                console.error("שגיאה קריטית באתחול האפליקציה:", err);
+                alert("אירעה שגיאה קריטית. יש לרענן את הדף.");
             }
         });
     </script>
