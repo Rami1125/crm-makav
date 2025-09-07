@@ -1,119 +1,619 @@
-<!-- ... existing code ... -->
-        .install-prompt-actions {
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>לוח בקרה מתקדם - מעקב מכולות</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
+    <style>
+        :root {
+            --brand: #0b72b9;
+            --accent: #ff9f1c;
+            --bg: #f4f7fb;
+            --card: #ffffff;
+            --muted: #6b7280;
+            --radius: 10px;
+            --shadow: 0 6px 18px rgba(10, 25, 47, 0.08);
+            --rtl: 1;
+            font-size: 16px;
+            
+            /* צבעי סטטוס */
+            --status-available: #e6f4ea;
+            --status-available-text: #137333;
+            --status-in-transit: #e8f0fe;
+            --status-in-transit-text: #1a73e8;
+            --status-delivered: #fef7e0;
+            --status-delivered-text: #f9ab00;
+            --status-overdue: #fce8e6;
+            --status-overdue-text: #c5221f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 18px;
+            font-family: "Heebo", "Alef", Arial, sans-serif;
+            background: var(--bg);
+            color: #0b1721;
+            direction: rtl;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .brand {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .logo {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--brand), #0369a1);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Layout */
+        .container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+
+        @media (max-width: 1000px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Left panel (filters) */
+        .left {
+            background: var(--card);
+            padding: 12px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .kpi {
+            display: flex;
+            gap: 8px;
+            flex-direction: column;
+        }
+
+        .kpi-row {
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        .kpi-card {
+            flex: 1;
+            background: linear-gradient(180deg, #fff, var(--card));
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(12, 28, 52, 0.04);
+            text-align: center;
+        }
+
+        .kpi-number {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        /* Main content */
+        .main {
+            background: var(--card);
+            padding: 12px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .search {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #e6eef8;
+            background: #fbfdff;
+        }
+
+        .table {
             width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th, .table td {
+            padding: 8px;
+            border-bottom: 1px solid #eef5fb;
+            text-align: center;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .table th {
+            background: #f8fbff;
+            font-weight: 700;
+            color: var(--brand);
+        }
+
+        /* Right panel - notifications & tools */
+        .right {
+            background: var(--card);
+            padding: 12px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            grid-column: 1 / -1;
+            margin-top: 16px;
+        }
+
+        .alert {
+            background: #fff4f0;
+            border-left: 4px solid #ff8a4b;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .note-area {
+            width: 100%;
+            min-height: 120px;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #e6eef8;
+            margin-top: 8px;
+        }
+
+        /* Dashboard charts */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            background: var(--card);
+            padding: 16px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .chart-title {
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--brand);
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 250px !important;
+        }
+
+        /* Status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-available {
+            background: var(--status-available);
+            color: var(--status-available-text);
+        }
+
+        .status-in-transit {
+            background: var(--status-in-transit);
+            color: var(--status-in-transit-text);
+        }
+
+        .status-delivered {
+            background: var(--status-delivered);
+            color: var(--status-delivered-text);
+        }
+
+        .status-overdue {
+            background: var(--status-overdue);
+            color: var(--status-overdue-text);
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--brand);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
             justify-content: center;
         }
-    }
 
-    /* Modal styles */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(11, 23, 33, 0.6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2000;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s, visibility 0.3s;
-    }
+        .btn:hover {
+            background: #095a9a;
+        }
 
-    .modal-overlay.show {
-        opacity: 1;
-        visibility: visible;
-    }
+        .btn.secondary {
+            background: #e6f1fb;
+            color: var(--brand);
+        }
 
-    .modal {
-        background: var(--card);
-        padding: 24px;
-        border-radius: var(--radius);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        width: 90%;
-        max-width: 500px;
-        transform: scale(0.95);
-        transition: transform 0.3s;
-    }
+        .btn.secondary:hover {
+            background: #d4e5f7;
+        }
 
-    .modal-overlay.show .modal {
-        transform: scale(1);
-    }
+        .btn.danger {
+            background: #fbe6e6;
+            color: #dc2626;
+        }
 
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #eef5fb;
-    }
+        .btn.danger:hover {
+            background: #f9d4d4;
+        }
 
-    .modal-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--brand);
-    }
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1000;
+            pointer-events: none;
+        }
 
-    .modal-close-btn {
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: var(--muted);
-    }
+        .toast {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            max-width: 400px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: auto;
+        }
 
-    .modal-body {
-        margin-bottom: 24px;
-        max-height: 60vh;
-        overflow-y: auto;
-    }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
-    .modal-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-    }
-    
-    /* Modal Form Styles */
-    .form-group {
-        margin-bottom: 12px;
-    }
-    
-    .form-group label {
-        display: block;
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 4px;
-        color: var(--muted);
-    }
-    
-    .form-group input, .form-group select, .form-group textarea {
-        width: 100%;
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #e6eef8;
-        background: #fbfdff;
-        font-size: 14px;
-    }
-</style>
+        .toast.info {
+            border-left: 4px solid var(--brand);
+        }
+
+        .toast.warning {
+            border-left: 4px solid var(--accent);
+        }
+
+        .toast.error {
+            border-left: 4px solid #dc2626;
+        }
+
+        .toast.success {
+            border-left: 4px solid #137333;
+        }
+
+        .toast-icon {
+            margin-left: 10px;
+            font-size: 18px;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            margin-right: auto;
+            color: var(--muted);
+        }
+
+        /* Install prompt */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+            max-width: 500px;
+            margin: 0 auto;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        .install-prompt.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .install-prompt-content {
+            flex-grow: 1;
+        }
+
+        .install-prompt-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .install-prompt {
+                flex-direction: column;
+                text-align: center;
+                gap: 12px;
+            }
+            
+            .install-prompt-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(11, 23, 33, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--card);
+            padding: 24px;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eef5fb;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--brand);
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .modal-body {
+            margin-bottom: 24px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+        
+        /* Modal Form Styles */
+        .form-group {
+            margin-bottom: 12px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--muted);
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e6eef8;
+            background: #fbfdff;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-<!-- ... existing code ... -->
+    <div class="header">
+        <div class="brand">
+            <div class="logo">ח.סבן</div>
+            <div>
+                <div style="font-weight:700;font-size:18px">לוח בקרה - מעקב מכולות</div>
+                <div style="color:var(--muted);font-size:13px">חיבור לגליון: מעקב</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input id="globalSearch" class="search" placeholder="חפש (מספר הזמנה, לקוח, כתובת...)" oninput="applyFilter()" />
+            <button class="btn" onclick="refresh()">רענן</button>
+            <button class="btn secondary" onclick="openNewOrder()">הזמנה חדשה</button>
             <button class="btn secondary" id="installButton" style="display:none;">התקן אפליקציה</button>
         </div>
     </div>
 
     <div class="container">
-<!-- ... existing code ... -->
+        <div class="left">
+            <div style="font-weight:700;margin-bottom:8px">KPIs</div>
+            <div class="kpi">
+                <div class="kpi-row">
+                    <div class="kpi-card"><div style="color:var(--muted)">סה״כ הזמנות</div><div id="kTotal" class="kpi-number">—</div></div>
+                    <div class="kpi-card"><div style="color:var(--muted)">פתוחות</div><div id="kOpen" class="kpi-number">—</div></div>
+                </div>
+                <div class="kpi-row" style="margin-top:8px">
+                    <div class="kpi-card"><div style="color:var(--muted)">חורגות</div><div id="kOver" class="kpi-number">—</div></div>
+                    <div class="kpi-card"><div style="color:var(--muted)">מכולות בשימוש</div><div id="kContainers" class="kpi-number">—</div></div>
+                </div>
+            </div>
+
+            <hr style="margin:12px 0" />
+            <div style="font-weight:700;margin-bottom:6px">כלים לפיתוח</div>
+            <div style="font-size:13px;color:var(--muted)">
+                כאן תוכל לכתוב רעיונות, משימות או טיקט מהיר לצוות הפיתוח — לשמור ישירות בגליון כתזכורת.
+            </div>
+            <textarea id="devNote" class="note-area" placeholder="כתוב הערה/רשימת משימות..."></textarea>
+            <div style="margin-top:8px; display:flex; gap:8px">
+                <button class="btn" onclick="saveDevNote()">שמור הערה</button>
+                <button class="btn secondary" onclick="loadDevNotes()">טען הערות</button>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="toolbar">
+                <div style="font-weight:700">טבלת הזמנות</div>
+                <div style="flex:1"></div>
+                <div id="statusMsg" style="color:var(--muted);font-size:13px"></div>
+            </div>
+
+            <table class="table" id="ordersTable">
+                <thead id="tHead"></thead>
+                <tbody id="tBody"></tbody>
+            </table>
+        </div>
+
+        <div class="right">
+            <div class="dashboard">
+                <div class="chart-container">
+                    <div class="chart-title">הזמנות לפי סטטוס</div>
+                    <canvas id="statusChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">הזמנות לפי חודש</div>
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+
+            <div style="font-weight:700;margin-bottom:8px">התראות</div>
+            <div id="alerts"></div>
+
+            <div style="margin-top: 16px;">
+                <div style="font-weight:700;margin-bottom:8px">הגדרות התראות</div>
+                <div style="font-size:14px;margin-bottom:8px">קבל התראות כאשר:</div>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                    <label style="display:flex;align-items:center;gap:4px;">
+                        <input type="checkbox" id="alertOverdue" checked> הזמנה חורגת
+                    </label>
+                    <label style="display:flex;align-items:center;gap:4px;">
+                        <input type="checkbox" id="alertNewOrder" checked> הזמנה חדשה נוצרת
+                    </label>
+                    <label style="display:flex;align-items:center;gap:4px;">
+                        <input type="checkbox" id="alertStatusChange"> סטטוס הזמנה משתנה
+                    </label>
+                </div>
+                <button class="btn" style="margin-top:10px;" onclick="saveAlertSettings()">שמור הגדרות</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <div class="install-prompt" id="installPrompt">
+        <div class="install-prompt-content">
+            <strong>התקן את אפליקציית מעקב המכולות</strong>
+            <div style="font-size:14px;color:var(--muted)">גישה מהירה ישירות מהמסך הראשי שלך</div>
+        </div>
+        <div class="install-prompt-actions">
+            <button class="btn secondary" onclick="dismissInstallPrompt()">לא עכשיו</button>
             <button class="btn" onclick="installPWA()">התקן</button>
         </div>
     </div>
 
     <!-- Modal Container -->
-    <div id="modalOverlay" class="modal-overlay">
+    <div id="modalOverlay" class="modal-overlay" onclick="closeModal()">
         <div id="appModal" class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <div id="modalTitle" class="modal-title"></div>
@@ -129,30 +629,49 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // ========== CONFIG ==========
-<!-- ... existing code ... -->
+        const API_URL = "https://script.google.com/macros/s/AKfycbydmQ1jF7rL19QS_NY84Rgvzddv2awOlPyjwW4QOic1qGairdmMjJFMG0FzsFu4blqlSw/exec";
+        
+        // ========== STATE ==========
+        let rawData = [];
+        let headers = [];
         let statusChart, timelineChart;
         let deferredPrompt = null;
         let realTimeInterval = null;
         const alertSettings = {
-<!-- ... existing code ... -->
+            overdue: true,
+            newOrder: true,
             statusChange: false
         };
 
         // ========== PWA SETUP ==========
         window.addEventListener('beforeinstallprompt', (e) => {
-<!-- ... existing code ... -->
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installButton').style.display = 'block';
             showInstallPrompt();
         });
 
         function showInstallPrompt() {
-<!-- ... existing code ... -->
-// ... existing code ...
+            const prompt = document.getElementById('installPrompt');
+            prompt.classList.add('show');
+        }
+
+        function dismissInstallPrompt() {
+            const prompt = document.getElementById('installPrompt');
+            prompt.classList.remove('show');
+        }
+
+        function installPWA() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
                         console.log('User accepted the install prompt');
-// ... existing code ...
+                    } else {
+                        console.log('User dismissed the install prompt');
+                    }
+                    deferredPrompt = null;
+                    dismissInstallPrompt();
                     document.getElementById('installButton').style.display = 'none';
                 });
             }
@@ -170,7 +689,6 @@
             modalBody.innerHTML = body;
             modalFooter.innerHTML = footer;
             modalOverlay.classList.add('show');
-            // Close modal on escape key
             document.addEventListener('keydown', handleEscKey);
         }
 
@@ -187,15 +705,26 @@
 
         // ========== REAL-TIME UPDATES ==========
         function initRealTimeUpdates() {
-            // רענון אוטומטי כל 30 שניות
-<!-- ... existing code ... -->
-// ... existing code ...
+            if (realTimeInterval) clearInterval(realTimeInterval);
+            realTimeInterval = setInterval(refresh, 30000);
+            setInterval(simulateRealTimeChanges, 45000);
+        }
+
+        function simulateRealTimeChanges() {
+            if (Math.random() > 0.7 && rawData.length > 0) {
+                const randomIndex = Math.floor(Math.random() * rawData.length);
+                const order = rawData[randomIndex];
+                
+                if (alertSettings.newOrder) {
+                    showToast(`הזמנה חדשה התווספה: ${order['מספר הזמנה'] || 'ללא מספר'}`, 'info');
+                }
             }
         }
 
         // ========== TOAST NOTIFICATIONS ==========
         function showToast(message, type = 'info') {
-<!-- ... existing code ... -->
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.innerHTML = `
                 <div>${message}</div>
@@ -203,30 +732,167 @@
             `;
             
             toastContainer.appendChild(toast);
-<!-- ... existing code ... -->
-// ... existing code ...
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.remove('show');
                     setTimeout(() => toast.remove(), 300);
                 }
             }, 5000);
         }
 
         // ========== ALERT SETTINGS ==========
-<!-- ... existing code ... -->
-// ... existing code ...
+        function loadAlertSettings() {
+            const saved = localStorage.getItem('alertSettings');
+            if (saved) {
+                Object.assign(alertSettings, JSON.parse(saved));
+                document.getElementById('alertOverdue').checked = alertSettings.overdue;
+                document.getElementById('alertNewOrder').checked = alertSettings.newOrder;
+                document.getElementById('alertStatusChange').checked = alertSettings.statusChange;
+            }
+        }
+
+        function saveAlertSettings() {
+            alertSettings.overdue = document.getElementById('alertOverdue').checked;
+            alertSettings.newOrder = document.getElementById('alertNewOrder').checked;
+            alertSettings.statusChange = document.getElementById('alertStatusChange').checked;
             localStorage.setItem('alertSettings', JSON.stringify(alertSettings));
             showToast('הגדרות ההתראות נשמרו', 'success');
         }
 
         // ========== CHARTS ==========
         function initCharts() {
-<!-- ... existing code ... -->
-// ... existing code ...
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+            
+            if (statusChart) statusChart.destroy();
+            if (timelineChart) timelineChart.destroy();
+            
+            const statusData = prepareStatusData();
+            const timelineData = prepareTimelineData();
+            
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: statusData.labels,
+                    datasets: [{
+                        data: statusData.values,
+                        backgroundColor: ['#4caf50', '#2196f3', '#ff9800', '#f44336']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', rtl: true } }
+                }
+            });
+            
+            timelineChart = new Chart(timelineCtx, {
+                type: 'bar',
+                data: {
+                    labels: timelineData.labels,
+                    datasets: [{
+                        label: 'מספר הזמנות',
+                        data: timelineData.values,
+                        backgroundColor: '#0b72b9'
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        function prepareStatusData() {
+            const statusCount = { 'זמין': 0, 'במשלוח': 0, 'נמסר': 0, 'חורג': 0 };
+            rawData.forEach(order => {
+                const status = order['סטטוס'] || '';
+                if (status.includes('זמין')) statusCount['זמין']++;
+                else if (status.includes('משלוח')) statusCount['במשלוח']++;
+                else if (status.includes('נמסר')) statusCount['נמסר']++;
+                else if (status.includes('חורג')) statusCount['חורג']++;
+                else statusCount['זמין']++;
+            });
+            return { labels: Object.keys(statusCount), values: Object.values(statusCount) };
+        }
+
+        function prepareTimelineData() {
+            const months = [];
+            const monthCount = {};
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const monthKey = date.toLocaleDateString('he-IL', { month: 'short', year: 'numeric' });
+                months.push(monthKey);
+                monthCount[monthKey] = 0;
+            }
+            rawData.forEach(order => {
+                if (order['תאריך']) {
+                    try {
+                        const orderDate = new Date(order['תאריך']);
+                        const monthKey = orderDate.toLocaleDateString('he-IL', { month: 'short', year: 'numeric' });
+                        if (monthCount.hasOwnProperty(monthKey)) monthCount[monthKey]++;
+                    } catch (e) { console.log('Invalid date format', order['תאריך']); }
+                }
+            });
+            return { labels: months, values: months.map(m => monthCount[m] || 0) };
+        }
+
+        // ========== STATUS BADGES ==========
+        function getStatusBadge(status) {
+            if (!status) return '';
+            status = String(status);
+            let badgeClass = 'status-available', badgeText = 'זמין';
+            if (status.includes('משלוח')) { badgeClass = 'status-in-transit'; badgeText = 'במשלוח'; }
+            else if (status.includes('נמסר')) { badgeClass = 'status-delivered'; badgeText = 'נמסר'; }
+            else if (status.includes('חורג')) { badgeClass = 'status-overdue'; badgeText = 'חורג'; }
+            return `<span class="status-badge ${badgeClass}">${badgeText}</span>`;
+        }
+
+        // ========== API HELPERS ==========
+        async function apiGet(action) {
+            const res = await fetch(`${API_URL}?action=${action}`);
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return await res.json();
+        }
+
+        async function apiPost(body) {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return await res.json();
+        }
+
+        // ========== DATE FORMATTING ==========
+        function formatDateTime(value) {
+            if (!value && value !== 0) return "";
+            let d = (value instanceof Date) ? value : new Date(value);
+            if (isNaN(d.getTime())) return value;
+            try {
+                const dateStr = d.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "numeric" });
+                const timeStr = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+                if (d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0) return dateStr;
+                return `${dateStr}, ${timeStr}`;
+            } catch (e) { return value; }
+        }
+
+        function looksLikeDateHeader(h) {
+            if (!h) return false;
+            const s = String(h).toLowerCase();
+            return s.includes("תאריך") || s.includes("date") || s.includes("סיום");
+        }
+
+        // ========== UI RENDERERS ==========
+        function renderTable(data, hdrs) {
+            headers = hdrs;
+            const thead = document.getElementById("tHead");
             const tbody = document.getElementById("tBody");
             thead.innerHTML = "";
             tbody.innerHTML = "";
 
             if (!hdrs || hdrs.length === 0) {
-<!-- ... existing code ... -->
                 thead.innerHTML = "<tr><th>אין נתונים להצגה. יש לוודא שהוגדרו כותרות בגליון 'מעקב'.</th></tr>";
                 return;
             }
@@ -234,215 +900,345 @@
             thead.innerHTML = "<tr>" + hdrs.map(h => `<th>${h}</th>`).join("") + "<th>סטטוס</th><th>פעולות</th></tr>";
 
             data.forEach((rowObj, idx) => {
-<!-- ... existing code ... -->
-                const actionCell = `<td style="display: flex; gap: 4px; justify-content: center;">
-                    <button class="btn secondary" style="padding: 4px 8px;" onclick="showDetail(${idx})">פרטים</button>
-                    <button class="btn" style="padding: 4px 8px;" onclick="editRowPrompt(${idx})">ערוך</button>
-                    <button class="btn danger" style="padding: 4px 8px;" onclick="deleteRowByIdx(${idx})">מחק</button>
+                const cells = hdrs.map(h => {
+                    const v = rowObj[h];
+                    if (looksLikeDateHeader(h)) return `<td>${formatDateTime(v)}</td>`;
+                    if (String(h).includes("טלפון") && v) return `<td><a href="tel:${v}">${v}</a></td>`;
+                    if (String(h).includes("כתובת") && v) return `<td><button class="btn secondary" style="padding: 4px 8px; font-size: 12px;" onclick="openMap('${encodeURIComponent(v)}')">מפה</button></td>`;
+                    return `<td>${v === null || v === undefined ? "" : v}</td>`;
+                }).join("");
+
+                const statusCell = `<td>${getStatusBadge(rowObj['סטטוס'])}</td>`;
+                
+                const actionCell = `<td style="display: flex; gap: 4px; justify-content: center; align-items:center;">
+                    <button class="btn secondary" style="padding: 6px 8px;" title="פרטים" onclick="showDetail(${idx})">👁️</button>
+                    <button class="btn" style="padding: 6px 8px;" title="ערוך" onclick="editRowPrompt(${idx})">✏️</button>
+                    <button class="btn secondary" style="padding: 6px 8px;" title="שכפל" onclick="duplicateRow(${idx})">📋</button>
+                    <button class="btn danger" style="padding: 6px 8px;" title="מחק" onclick="deleteRowByIdx(${idx})">🗑️</button>
                     </td>`;
 
                 tbody.innerHTML += `<tr>${cells}${statusCell}${actionCell}</tr>`;
             });
         }
-<!-- ... existing code ... -->
-                statusMsg.innerText = "שגיאה: " + resp.message;
-                showToast("שגיאה בטעינת הנתונים: " + resp.message, "error");
+
+        // ========== KPI + ALERTS ==========
+        function computeKPIs(data, hdrs) {
+            const total = data.length;
+            const statusField = hdrs.find(h => String(h).includes("סטטוס")) || hdrs[hdrs.length-1];
+            const dateField = hdrs.find(h => String(h).includes("סיום"));
+
+            const open = data.filter(r => {
+                const s = statusField ? String(r[statusField] || "").toLowerCase() : "";
+                return s !== "סגור" && s !== "closed" && s !== "סגורה";
+            }).length;
+            
+            let overdue = [];
+            if (dateField) {
+                const today = new Date(); 
+                today.setHours(0, 0, 0, 0);
+                overdue = data.filter(r => {
+                    const v = r[dateField];
+                    if (!v) return false;
+                    const d = new Date(v);
+                    if (isNaN(d.getTime())) return false;
+                    d.setHours(0,0,0,0);
+                    const isOpen = (String(r[statusField] || "").toLowerCase() !== "סגור");
+                    return isOpen && d < today;
+                });
             }
-        } catch (err) {
-            statusMsg.innerText = "שגיאת רשת: " + err.message;
-            showToast("שגיאת רשת. ודא שה-API_URL נכון והשרת פועל.\n" + err.message, "error");
-        }
-    }
 
-    function showDetail(idx) {
-        const data = rawData[idx];
-        if (!data) return;
-        
-        let body = '';
-        for (const k in data) {
-            const v = looksLikeDateHeader(k) ? formatDateTime(data[k]) : data[k];
-            body += `<div class="form-group">
-                <label>${k}</label>
-                <div style="font-weight:600; font-size:16px; padding: 8px; background: #f8fbff; border-radius: 6px;">${v || '—'}</div>
-            </div>`;
-        }
-        
-        const footer = `
-            <button type="button" class="btn secondary" onclick="closeModal()">סגור</button>
-            <button type="button" class="btn" onclick="sendWhatsApp(${idx})">שלח WhatsApp</button>`;
-        
-        showModal('פרטי הזמנה', body, footer);
-    }
+            document.getElementById("kTotal").innerText = total;
+            document.getElementById("kOpen").innerText = open;
+            document.getElementById("kOver").innerText = overdue.length;
 
-    function openMap(q) {
-        window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, "_blank");
-    }
-
-    function editRowPrompt(idx) {
-        const originalRow = rawData[idx];
-        if (!originalRow) return;
-
-        let formHtml = '';
-        headers.forEach(h => {
-            const val = originalRow[h] || '';
-            const isDateField = looksLikeDateHeader(h);
-            const inputType = isDateField ? 'date' : 'text';
-            const displayValue = isDateField && val ? new Date(val).toISOString().split('T')[0] : val;
-
-            formHtml += `<div class="form-group">
-                <label for="field-${h}">${h}</label>
-                <input type="${inputType}" id="field-${h}" name="${h}" value="${displayValue}">
-            </div>`;
-        });
-        
-        modalForm.onsubmit = () => handleFormSubmit(idx);
-        
-        const footer = `
-            <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
-            <button type="submit" class="btn">שמור שינויים</button>`;
-
-        showModal('עריכת הזמנה', formHtml, footer);
-    }
-
-    function openNewOrder() {
-        if (!headers || headers.length === 0) {
-            showToast("לא ניתן להוסיף הזמנה. יש להגדיר כותרות בגליון תחילה.", "warning");
-            return;
-        }
-
-        let formHtml = '';
-        headers.forEach(h => {
-            const isDateField = looksLikeDateHeader(h);
-            const inputType = isDateField ? 'date' : 'text';
-            formHtml += `<div class="form-group">
-                <label for="field-${h}">${h}</label>
-                <input type="${inputType}" id="field-${h}" name="${h}" value="">
-            </div>`;
-        });
-
-        modalForm.onsubmit = () => handleFormSubmit(null);
-
-        const footer = `
-            <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
-            <button type="submit" class="btn">צור הזמנה</button>`;
-
-        showModal('הזמנה חדשה', formHtml, footer);
-    }
-
-    async function handleFormSubmit(idx) {
-        const isNew = idx === null;
-        const action = isNew ? "addRow" : "updateRow";
-        const formData = new FormData(modalForm);
-        const newRowData = {};
-        
-        headers.forEach(h => {
-            newRowData[h] = formData.get(h);
-        });
-        
-        const payload = { 
-            action: action, 
-            row: headers.map(h => newRowData[h])
-        };
-        if (!isNew) {
-            payload.index = idx;
-        }
-
-        // Show loading state
-        const submitBtn = modalFooter.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn.innerHTML;
-        submitBtn.innerHTML = 'שומר...';
-        submitBtn.disabled = true;
-
-        try {
-            const r = await apiPost(payload);
-            showToast(r.message || "הפעולה בוצעה בהצלחה", "success");
-            if (r.status === 'success' && isNew && alertSettings.newOrder) {
-                showToast('הזמנה חדשה נוצרה', 'info');
+            const alerts = document.getElementById("alerts");
+            alerts.innerHTML = "";
+            if (overdue.length === 0) {
+                alerts.innerHTML = "<div style='color:var(--muted)'>אין חריגות</div>";
+            } else {
+                overdue.slice(0, 6).forEach(o => {
+                    const title = (o["שם לקוח"] || o["לקוח"] || "לקוח לא ידוע");
+                    const end = formatDateTime(o[dateField]);
+                    alerts.innerHTML += `<div class="alert"><div style="font-weight:700">${title}</div><div style="font-size:13px">תאריך סיום חורג: ${end}</div></div>`;
+                    if (alertSettings.overdue) {
+                        showToast(`הזמנה חורגת: ${title}`, 'error');
+                    }
+                });
             }
-            refresh();
-            closeModal();
-        } catch (e) {
-            showToast("שגיאה בשמירה: " + e.message, "error");
-        } finally {
-            submitBtn.innerHTML = originalBtnText;
-            submitBtn.disabled = false;
         }
-    }
 
-    function deleteRowByIdx(idx) {
-        const rowToDelete = rawData[idx];
-        const identifier = rowToDelete[headers[0]] || `שורה ${idx+1}`;
-        
-        const body = `האם אתה בטוח שברצונך למחוק את ההזמנה <strong>"${identifier}"</strong>? לא ניתן לשחזר פעולה זו.`;
-        const footer = `
-            <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
-            <button type="button" class="btn danger" id="confirmDeleteBtn">מחק</button>`;
+        // ========== ACTIONS ==========
+        async function refresh() {
+            const statusMsg = document.getElementById("statusMsg");
+            statusMsg.innerText = "טוען...";
+            try {
+                const resp = await apiGet("getData");
+                if (resp.status === "success") {
+                    rawData = resp.data || [];
+                    const currentHeaders = resp.headers || (rawData[0] ? Object.keys(rawData[0]) : []);
+                    renderTable(rawData, currentHeaders);
+                    computeKPIs(rawData, currentHeaders);
+                    initCharts();
+                    statusMsg.innerText = `נטענו ${rawData.length} שורות. עודכן לאחרונה: ${new Date().toLocaleTimeString('he-IL')}`;
+                } else {
+                    statusMsg.innerText = "שגיאה: " + resp.message;
+                    showToast("שגיאה בטעינת הנתונים: " + resp.message, "error");
+                }
+            } catch (err) {
+                statusMsg.innerText = "שגיאת רשת: " + err.message;
+                showToast("שגיאת רשת. ודא שה-API_URL נכון והשרת פועל.\n" + err.message, "error");
+            }
+        }
 
-        showModal('אישור מחיקה', body, footer);
+        function showDetail(idx) {
+            const data = rawData[idx];
+            if (!data) return;
+            
+            let body = '';
+            for (const k in data) {
+                const v = looksLikeDateHeader(k) ? formatDateTime(data[k]) : data[k];
+                body += `<div class="form-group">
+                    <label>${k}</label>
+                    <div style="font-weight:600; font-size:16px; padding: 8px; background: #f8fbff; border-radius: 6px;">${v || '—'}</div>
+                </div>`;
+            }
+            
+            const footer = `
+                <button type="button" class="btn secondary" onclick="closeModal()">סגור</button>
+                <button type="button" class="btn" onclick="sendWhatsApp(${idx})">שלח WhatsApp</button>`;
+            
+            showModal('פרטי הזמנה', body, footer);
+        }
 
-        document.getElementById('confirmDeleteBtn').onclick = async () => {
-            const btn = document.getElementById('confirmDeleteBtn');
-            btn.innerHTML = 'מוחק...';
-            btn.disabled = true;
+        function openMap(q) {
+            window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, "_blank");
+        }
+
+        function editRowPrompt(idx) {
+            const originalRow = rawData[idx];
+            if (!originalRow) return;
+
+            let formHtml = '';
+            headers.forEach(h => {
+                const val = originalRow[h] || '';
+                const isDateField = looksLikeDateHeader(h);
+                const inputType = isDateField ? 'date' : 'text';
+                const displayValue = isDateField && val ? new Date(val).toISOString().split('T')[0] : val;
+
+                formHtml += `<div class="form-group">
+                    <label for="field-${h}">${h}</label>
+                    <input type="${inputType}" id="field-${h}" name="${h}" value="${displayValue}" class="form-control">
+                </div>`;
+            });
+            
+            modalForm.onsubmit = () => handleFormSubmit(idx);
+            
+            const footer = `
+                <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
+                <button type="submit" class="btn">שמור שינויים</button>`;
+
+            showModal('עריכת הזמנה', formHtml, footer);
+        }
+
+        function duplicateRow(idx) {
+            const originalRow = rawData[idx];
+            if (!originalRow) return;
+
+            let formHtml = '';
+            headers.forEach(h => {
+                const val = originalRow[h] || '';
+                const isDateField = looksLikeDateHeader(h);
+                const inputType = isDateField ? 'date' : 'text';
+                const displayValue = isDateField && val ? new Date(val).toISOString().split('T')[0] : val;
+
+                formHtml += `<div class="form-group">
+                    <label for="field-${h}">${h}</label>
+                    <input type="${inputType}" id="field-${h}" name="${h}" value="${displayValue}" class="form-control">
+                </div>`;
+            });
+
+            modalForm.onsubmit = () => handleFormSubmit(null); // Submit as a new row
+
+            const footer = `
+                <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
+                <button type="submit" class="btn">צור הזמנה משוכפלת</button>`;
+
+            showModal('שכפול הזמנה', formHtml, footer);
+        }
+
+        function openNewOrder() {
+            if (!headers || headers.length === 0) {
+                showToast("לא ניתן להוסיף הזמנה. יש להגדיר כותרות בגליון תחילה.", "warning");
+                return;
+            }
+
+            let formHtml = '';
+            headers.forEach(h => {
+                const isDateField = looksLikeDateHeader(h);
+                const inputType = isDateField ? 'date' : 'text';
+                formHtml += `<div class="form-group">
+                    <label for="field-${h}">${h}</label>
+                    <input type="${inputType}" id="field-${h}" name="${h}" value="" class="form-control">
+                </div>`;
+            });
+
+            modalForm.onsubmit = () => handleFormSubmit(null);
+
+            const footer = `
+                <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
+                <button type="submit" class="btn">צור הזמנה</button>`;
+
+            showModal('הזמנה חדשה', formHtml, footer);
+        }
+
+        async function handleFormSubmit(idx) {
+            const isNew = idx === null;
+            const action = isNew ? "addRow" : "updateRow";
+            const formData = new FormData(modalForm);
+            const newRowData = {};
+            
+            headers.forEach(h => {
+                newRowData[h] = formData.get(h);
+            });
+            
+            const payload = { 
+                action: action, 
+                row: headers.map(h => newRowData[h])
+            };
+            if (!isNew) {
+                payload.index = idx;
+            }
+
+            const submitBtn = modalFooter.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'שומר...';
+            submitBtn.disabled = true;
 
             try {
-                const r = await apiPost({ action: "deleteRow", index: idx });
-                showToast(r.message, "success");
+                const r = await apiPost(payload);
+                showToast(r.message || "הפעולה בוצעה בהצלחה", "success");
+                if (r.status === 'success' && isNew && alertSettings.newOrder) {
+                    showToast('הזמנה חדשה נוצרה', 'info');
+                }
                 refresh();
-            } catch (e) {
-                showToast("שגיאה במחיקה: " + e.message, "error");
-            } finally {
                 closeModal();
+            } catch (e) {
+                showToast("שגיאה בשמירה: " + e.message, "error");
+            } finally {
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
             }
-        };
-    }
-
-    function sendWhatsApp(idx) {
-        const row = rawData[idx];
-// ... existing code ...
-        const phone = phoneField ? row[phoneField] : "";
-        const client = clientField ? row[clientField] : "לקוח";
-        const text = encodeURIComponent(`שלום ${client}, בדיקת סטטוס הזמנה.`);
-        if (!phone) { 
-            showToast("לא נמצא מספר טלפון עבור הזמנה זו.", "warning");
-            return;
         }
-        const cleanPhone = String(phone).replace(/[^0-9]/g,'');
-        window.open(`https://wa.me/972${cleanPhone.substring(cleanPhone.length-9)}?text=${text}`, "_blank");
-    }
 
-    // Dev notes
-    async function saveDevNote(){
-        const text = document.getElementById("devNote").value.trim();
-        if (!text) { 
-            showToast("יש לכתוב תוכן להערה.", "warning");
-            return; 
-        }
-        const note = { author: "מנהל", text: text };
-        try {
-            const resp = await apiPost({ action: "saveDevNote", note: note });
-            showToast(resp.message || "ההערה נשמרה", "success");
-            document.getElementById("devNote").value = "";
-        } catch(e) {
-            showToast("שגיאה בשמירת הערה: " + e.message, "error");
-        }
-    }
+        function deleteRowByIdx(idx) {
+            const rowToDelete = rawData[idx];
+            const identifier = rowToDelete[headers[0]] || `שורה ${idx+1}`;
+            
+            const body = `<p>האם אתה בטוח שברצונך למחוק את ההזמנה <strong>"${identifier}"</strong>? לא ניתן לשחזר פעולה זו.</p>`;
+            const footer = `
+                <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
+                <button type="button" class="btn danger" id="confirmDeleteBtn">מחק</button>`;
 
-    async function loadDevNotes(){
-        try {
-            const resp = await apiGet("getDevNotes");
-            if (resp.status === "success" && resp.notes && resp.notes.length) {
-                const latest = resp.notes.slice(-5).reverse().map(n => `${formatDateTime(n.timestamp)} — ${n.author}: ${n.note}`).join("\n\n");
-                document.getElementById("devNote").value = latest;
-            } else {
+            showModal('אישור מחיקה', body, footer);
+
+            document.getElementById('confirmDeleteBtn').onclick = async () => {
+                const btn = document.getElementById('confirmDeleteBtn');
+                btn.innerHTML = 'מוחק...';
+                btn.disabled = true;
+
+                try {
+                    const r = await apiPost({ action: "deleteRow", index: idx });
+                    showToast(r.message, "success");
+                    refresh();
+                } catch (e) {
+                    showToast("שגיאה במחיקה: " + e.message, "error");
+                } finally {
+                    closeModal();
+                }
+            };
+        }
+
+        function sendWhatsApp(idx) {
+            const row = rawData[idx];
+            const phoneField = headers.find(h => h.includes("טלפון") || h.includes("phone"));
+            const clientField = headers.find(h => h.includes("שם") || h.includes("לקוח"));
+            const phone = phoneField ? row[phoneField] : "";
+            const client = clientField ? row[clientField] : "לקוח";
+            const text = encodeURIComponent(`שלום ${client}, בדיקת סטטוס הזמנה.`);
+            if (!phone) { 
+                showToast("לא נמצא מספר טלפון עבור הזמנה זו.", "warning");
+                return;
+            }
+            const cleanPhone = String(phone).replace(/[^0-9]/g,'');
+            window.open(`https://wa.me/972${cleanPhone.substring(cleanPhone.length-9)}?text=${text}`, "_blank");
+        }
+
+        // Dev notes
+        async function saveDevNote(){
+            const text = document.getElementById("devNote").value.trim();
+            if (!text) { 
+                showToast("יש לכתוב תוכן להערה.", "warning");
+                return; 
+            }
+            const note = { author: "מנהל", text: text };
+            try {
+                const resp = await apiPost({ action: "saveDevNote", note: note });
+                showToast(resp.message || "ההערה נשמרה", "success");
                 document.getElementById("devNote").value = "";
-                showToast("לא נמצאו הערות קודמות.", "info");
+            } catch(e) {
+                showToast("שגיאה בשמירת הערה: " + e.message, "error");
             }
-        } catch(e) {
-            showToast("שגיאה בטעינת הערות: " + e.message, "error");
         }
-    }
 
-    // Search filter
-    function applyFilter(){
-// ... existing code ...
+        async function loadDevNotes(){
+            try {
+                const resp = await apiGet("getDevNotes");
+                if (resp.status === "success" && resp.notes && resp.notes.length) {
+                    const latest = resp.notes.slice(-5).reverse().map(n => `${formatDateTime(n.timestamp)} — ${n.author}: ${n.note}`).join("\n\n");
+                    document.getElementById("devNote").value = latest;
+                } else {
+                    document.getElementById("devNote").value = "";
+                    showToast("לא נמצאו הערות קודמות.", "info");
+                }
+            } catch(e) {
+                showToast("שגיאה בטעינת הערות: " + e.message, "error");
+            }
+        }
+
+        // Search filter
+        function applyFilter(){
+            const q = document.getElementById("globalSearch").value.trim().toLowerCase();
+            if (!q) { 
+                renderTable(rawData, headers); 
+                return; 
+            }
+            const filtered = rawData.filter(r => {
+                return Object.values(r).some(v => String(v || "").toLowerCase().includes(q));
+            });
+            renderTable(filtered, headers);
+        }
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAlertSettings();
+            refresh();
+            initRealTimeUpdates();
+            
+            if ('serviceWorker' in navigator) {
+                const swScript = `
+                    self.addEventListener('install', event => { self.skipWaiting(); });
+                    self.addEventListener('activate', event => {});
+                    self.addEventListener('fetch', event => {});
+                `;
+                const blob = new Blob([swScript], { type: 'application/javascript' });
+                const swURL = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swURL)
+                    .then(reg => console.log('SW registered:', reg))
+                    .catch(err => console.log('SW registration failed:', err));
+            }
+        });
+    </script>
+</body>
+</html>
+
