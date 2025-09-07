@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-<link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>לוח בקרה מתקדם - מעקב מכולות</title>
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <style>
         :root {
             --brand: #0b72b9;
@@ -257,7 +257,7 @@
             color: white;
             border: none;
             padding: 8px 12px;
-            border-radius: 8px;
+            borderRadius: 8px;
             cursor: pointer;
             transition: background 0.2s;
         }
@@ -1062,28 +1062,34 @@
             
             // Register service worker for PWA
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js')
+                // Using inline service worker registration to avoid file issues
+                const swScript = `
+                    self.addEventListener('install', event => {
+                        console.log('Service Worker installing...');
+                        self.skipWaiting();
+                    });
+                    
+                    self.addEventListener('activate', event => {
+                        console.log('Service Worker activating...');
+                    });
+                    
+                    self.addEventListener('fetch', event => {
+                        // Can add caching strategies here in the future
+                    });
+                `;
+                
+                const blob = new Blob([swScript], { type: 'application/javascript' });
+                const swURL = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swURL)
                     .then(registration => {
                         console.log('SW registered: ', registration);
-                    }).catch(registrationError => {
+                    })
+                    .catch(registrationError => {
                         console.log('SW registration failed: ', registrationError);
                     });
             }
         });
-        <script>
-// Registration of Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('sw.js')
-      .then(function(registration) {
-        console.log('SW registered: ', registration);
-      })
-      .catch(function(registrationError) {
-        console.log('SW registration failed: ', registrationError);
-      });
-  });
-}
-</script>
     </script>
 </body>
 </html>
