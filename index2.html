@@ -1,0 +1,448 @@
+<!-- ... existing code ... -->
+        .install-prompt-actions {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Modal styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(11, 23, 33, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+    }
+
+    .modal-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .modal {
+        background: var(--card);
+        padding: 24px;
+        border-radius: var(--radius);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        width: 90%;
+        max-width: 500px;
+        transform: scale(0.95);
+        transition: transform 0.3s;
+    }
+
+    .modal-overlay.show .modal {
+        transform: scale(1);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #eef5fb;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--brand);
+    }
+
+    .modal-close-btn {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--muted);
+    }
+
+    .modal-body {
+        margin-bottom: 24px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+    
+    /* Modal Form Styles */
+    .form-group {
+        margin-bottom: 12px;
+    }
+    
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: var(--muted);
+    }
+    
+    .form-group input, .form-group select, .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #e6eef8;
+        background: #fbfdff;
+        font-size: 14px;
+    }
+</style>
+</head>
+<body>
+<!-- ... existing code ... -->
+            <button class="btn secondary" id="installButton" style="display:none;">התקן אפליקציה</button>
+        </div>
+    </div>
+
+    <div class="container">
+<!-- ... existing code ... -->
+            <button class="btn" onclick="installPWA()">התקן</button>
+        </div>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div id="appModal" class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div id="modalTitle" class="modal-title"></div>
+                <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="modalForm" onsubmit="return false;">
+                <div id="modalBody" class="modal-body"></div>
+                <div id="modalFooter" class="modal-footer"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // ========== CONFIG ==========
+<!-- ... existing code ... -->
+        let statusChart, timelineChart;
+        let deferredPrompt = null;
+        let realTimeInterval = null;
+        const alertSettings = {
+<!-- ... existing code ... -->
+            statusChange: false
+        };
+
+        // ========== PWA SETUP ==========
+        window.addEventListener('beforeinstallprompt', (e) => {
+<!-- ... existing code ... -->
+            showInstallPrompt();
+        });
+
+        function showInstallPrompt() {
+<!-- ... existing code ... -->
+// ... existing code ...
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+// ... existing code ...
+                    document.getElementById('installButton').style.display = 'none';
+                });
+            }
+        }
+        
+        // ========== MODAL CONTROLS ==========
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const modalFooter = document.getElementById('modalFooter');
+        const modalForm = document.getElementById('modalForm');
+
+        function showModal(title, body, footer) {
+            modalTitle.innerHTML = title;
+            modalBody.innerHTML = body;
+            modalFooter.innerHTML = footer;
+            modalOverlay.classList.add('show');
+            // Close modal on escape key
+            document.addEventListener('keydown', handleEscKey);
+        }
+
+        function closeModal() {
+            modalOverlay.classList.remove('show');
+            document.removeEventListener('keydown', handleEscKey);
+        }
+        
+        function handleEscKey(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        }
+
+        // ========== REAL-TIME UPDATES ==========
+        function initRealTimeUpdates() {
+            // רענון אוטומטי כל 30 שניות
+<!-- ... existing code ... -->
+// ... existing code ...
+            }
+        }
+
+        // ========== TOAST NOTIFICATIONS ==========
+        function showToast(message, type = 'info') {
+<!-- ... existing code ... -->
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div>${message}</div>
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            
+            toastContainer.appendChild(toast);
+<!-- ... existing code ... -->
+// ... existing code ...
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // ========== ALERT SETTINGS ==========
+<!-- ... existing code ... -->
+// ... existing code ...
+            localStorage.setItem('alertSettings', JSON.stringify(alertSettings));
+            showToast('הגדרות ההתראות נשמרו', 'success');
+        }
+
+        // ========== CHARTS ==========
+        function initCharts() {
+<!-- ... existing code ... -->
+// ... existing code ...
+            const tbody = document.getElementById("tBody");
+            thead.innerHTML = "";
+            tbody.innerHTML = "";
+
+            if (!hdrs || hdrs.length === 0) {
+<!-- ... existing code ... -->
+                thead.innerHTML = "<tr><th>אין נתונים להצגה. יש לוודא שהוגדרו כותרות בגליון 'מעקב'.</th></tr>";
+                return;
+            }
+
+            thead.innerHTML = "<tr>" + hdrs.map(h => `<th>${h}</th>`).join("") + "<th>סטטוס</th><th>פעולות</th></tr>";
+
+            data.forEach((rowObj, idx) => {
+<!-- ... existing code ... -->
+                const actionCell = `<td style="display: flex; gap: 4px; justify-content: center;">
+                    <button class="btn secondary" style="padding: 4px 8px;" onclick="showDetail(${idx})">פרטים</button>
+                    <button class="btn" style="padding: 4px 8px;" onclick="editRowPrompt(${idx})">ערוך</button>
+                    <button class="btn danger" style="padding: 4px 8px;" onclick="deleteRowByIdx(${idx})">מחק</button>
+                    </td>`;
+
+                tbody.innerHTML += `<tr>${cells}${statusCell}${actionCell}</tr>`;
+            });
+        }
+<!-- ... existing code ... -->
+                statusMsg.innerText = "שגיאה: " + resp.message;
+                showToast("שגיאה בטעינת הנתונים: " + resp.message, "error");
+            }
+        } catch (err) {
+            statusMsg.innerText = "שגיאת רשת: " + err.message;
+            showToast("שגיאת רשת. ודא שה-API_URL נכון והשרת פועל.\n" + err.message, "error");
+        }
+    }
+
+    function showDetail(idx) {
+        const data = rawData[idx];
+        if (!data) return;
+        
+        let body = '';
+        for (const k in data) {
+            const v = looksLikeDateHeader(k) ? formatDateTime(data[k]) : data[k];
+            body += `<div class="form-group">
+                <label>${k}</label>
+                <div style="font-weight:600; font-size:16px; padding: 8px; background: #f8fbff; border-radius: 6px;">${v || '—'}</div>
+            </div>`;
+        }
+        
+        const footer = `
+            <button type="button" class="btn secondary" onclick="closeModal()">סגור</button>
+            <button type="button" class="btn" onclick="sendWhatsApp(${idx})">שלח WhatsApp</button>`;
+        
+        showModal('פרטי הזמנה', body, footer);
+    }
+
+    function openMap(q) {
+        window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, "_blank");
+    }
+
+    function editRowPrompt(idx) {
+        const originalRow = rawData[idx];
+        if (!originalRow) return;
+
+        let formHtml = '';
+        headers.forEach(h => {
+            const val = originalRow[h] || '';
+            const isDateField = looksLikeDateHeader(h);
+            const inputType = isDateField ? 'date' : 'text';
+            const displayValue = isDateField && val ? new Date(val).toISOString().split('T')[0] : val;
+
+            formHtml += `<div class="form-group">
+                <label for="field-${h}">${h}</label>
+                <input type="${inputType}" id="field-${h}" name="${h}" value="${displayValue}">
+            </div>`;
+        });
+        
+        modalForm.onsubmit = () => handleFormSubmit(idx);
+        
+        const footer = `
+            <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
+            <button type="submit" class="btn">שמור שינויים</button>`;
+
+        showModal('עריכת הזמנה', formHtml, footer);
+    }
+
+    function openNewOrder() {
+        if (!headers || headers.length === 0) {
+            showToast("לא ניתן להוסיף הזמנה. יש להגדיר כותרות בגליון תחילה.", "warning");
+            return;
+        }
+
+        let formHtml = '';
+        headers.forEach(h => {
+            const isDateField = looksLikeDateHeader(h);
+            const inputType = isDateField ? 'date' : 'text';
+            formHtml += `<div class="form-group">
+                <label for="field-${h}">${h}</label>
+                <input type="${inputType}" id="field-${h}" name="${h}" value="">
+            </div>`;
+        });
+
+        modalForm.onsubmit = () => handleFormSubmit(null);
+
+        const footer = `
+            <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
+            <button type="submit" class="btn">צור הזמנה</button>`;
+
+        showModal('הזמנה חדשה', formHtml, footer);
+    }
+
+    async function handleFormSubmit(idx) {
+        const isNew = idx === null;
+        const action = isNew ? "addRow" : "updateRow";
+        const formData = new FormData(modalForm);
+        const newRowData = {};
+        
+        headers.forEach(h => {
+            newRowData[h] = formData.get(h);
+        });
+        
+        const payload = { 
+            action: action, 
+            row: headers.map(h => newRowData[h])
+        };
+        if (!isNew) {
+            payload.index = idx;
+        }
+
+        // Show loading state
+        const submitBtn = modalFooter.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.innerHTML = 'שומר...';
+        submitBtn.disabled = true;
+
+        try {
+            const r = await apiPost(payload);
+            showToast(r.message || "הפעולה בוצעה בהצלחה", "success");
+            if (r.status === 'success' && isNew && alertSettings.newOrder) {
+                showToast('הזמנה חדשה נוצרה', 'info');
+            }
+            refresh();
+            closeModal();
+        } catch (e) {
+            showToast("שגיאה בשמירה: " + e.message, "error");
+        } finally {
+            submitBtn.innerHTML = originalBtnText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    function deleteRowByIdx(idx) {
+        const rowToDelete = rawData[idx];
+        const identifier = rowToDelete[headers[0]] || `שורה ${idx+1}`;
+        
+        const body = `האם אתה בטוח שברצונך למחוק את ההזמנה <strong>"${identifier}"</strong>? לא ניתן לשחזר פעולה זו.`;
+        const footer = `
+            <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
+            <button type="button" class="btn danger" id="confirmDeleteBtn">מחק</button>`;
+
+        showModal('אישור מחיקה', body, footer);
+
+        document.getElementById('confirmDeleteBtn').onclick = async () => {
+            const btn = document.getElementById('confirmDeleteBtn');
+            btn.innerHTML = 'מוחק...';
+            btn.disabled = true;
+
+            try {
+                const r = await apiPost({ action: "deleteRow", index: idx });
+                showToast(r.message, "success");
+                refresh();
+            } catch (e) {
+                showToast("שגיאה במחיקה: " + e.message, "error");
+            } finally {
+                closeModal();
+            }
+        };
+    }
+
+    function sendWhatsApp(idx) {
+        const row = rawData[idx];
+// ... existing code ...
+        const phone = phoneField ? row[phoneField] : "";
+        const client = clientField ? row[clientField] : "לקוח";
+        const text = encodeURIComponent(`שלום ${client}, בדיקת סטטוס הזמנה.`);
+        if (!phone) { 
+            showToast("לא נמצא מספר טלפון עבור הזמנה זו.", "warning");
+            return;
+        }
+        const cleanPhone = String(phone).replace(/[^0-9]/g,'');
+        window.open(`https://wa.me/972${cleanPhone.substring(cleanPhone.length-9)}?text=${text}`, "_blank");
+    }
+
+    // Dev notes
+    async function saveDevNote(){
+        const text = document.getElementById("devNote").value.trim();
+        if (!text) { 
+            showToast("יש לכתוב תוכן להערה.", "warning");
+            return; 
+        }
+        const note = { author: "מנהל", text: text };
+        try {
+            const resp = await apiPost({ action: "saveDevNote", note: note });
+            showToast(resp.message || "ההערה נשמרה", "success");
+            document.getElementById("devNote").value = "";
+        } catch(e) {
+            showToast("שגיאה בשמירת הערה: " + e.message, "error");
+        }
+    }
+
+    async function loadDevNotes(){
+        try {
+            const resp = await apiGet("getDevNotes");
+            if (resp.status === "success" && resp.notes && resp.notes.length) {
+                const latest = resp.notes.slice(-5).reverse().map(n => `${formatDateTime(n.timestamp)} — ${n.author}: ${n.note}`).join("\n\n");
+                document.getElementById("devNote").value = latest;
+            } else {
+                document.getElementById("devNote").value = "";
+                showToast("לא נמצאו הערות קודמות.", "info");
+            }
+        } catch(e) {
+            showToast("שגיאה בטעינת הערות: " + e.message, "error");
+        }
+    }
+
+    // Search filter
+    function applyFilter(){
+// ... existing code ...
