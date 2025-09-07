@@ -932,13 +932,6 @@
         // ========== CONFIG ==========
         const API_URL = "https://script.google.com/macros/s/AKfycbydmQ1jF7rL19QS_NY84Rgvzddv2awOlPyjwW4QOic1qGairdmMjJFMG0FzsFu4blqlSw/exec";
         
-        // ========== DEFAULTS ==========
-        Chart.defaults.font.family = "Assistant";
-        Chart.defaults.font.weight = "bold";
-        Chart.defaults.font.size = 14;
-        Chart.defaults.color = "#333";
-
-
         // ========== STATE ==========
         let rawData = [];
         let headers = [];
@@ -1753,7 +1746,7 @@
         
         // ========== Smart Order Form ==========
         function openNewOrder(initialData = null, editIndex = null) {
-            isFullFormVisible = false;
+            isFullFormVisible = false; // Reset view state
             const isEdit = editIndex !== null;
             const data = initialData || {};
             const standardFields = headers.filter(h => !NEW_HEADERS.includes(h));
@@ -1778,7 +1771,7 @@
             const actionType = data['סוג פעולה'] || 'הורדה';
             formHtml += `<div class="form-group">
                 <label for="field-סוג_פעולה">סוג פעולה</label>
-                <select id="field-סוג_פעולה" name="סוג פעולה" class="form-control" onchange="updateDynamicFormFields(this.value, {})">
+                <select id="field-סוג_פעולה" name="סוג פעולה" class="form-control" onchange="updateDynamicFormFields(this.value, {}, ${isEdit})">
                     <option value="הורדה" ${actionType === 'הורדה' ? 'selected' : ''}>הורדה</option>
                     <option value="החלפה" ${actionType === 'החלפה' ? 'selected' : ''}>החלפה</option>
                     <option value="העלאה" ${actionType === 'העלאה' ? 'selected' : ''}>העלאה</option>
@@ -1797,7 +1790,6 @@
                     </select>
                 </div>`;
             } else {
-                // Add a placeholder if the column doesn't exist yet
                 formHtml += '<div></div>';
             }
             
@@ -1835,7 +1827,7 @@
             const buttonText = isEdit ? 'שמור שינויים' : 'צור הזמנה';
             const footer = `
                 <div>
-                    <button type="button" class="btn secondary" onclick="toggleFullForm()">הצג את כל הטופס</button>
+                    ${!isEdit ? `<button type="button" class="btn secondary" onclick="toggleFullForm()">הצג את כל הטופס</button>` : ''}
                 </div>
                 <div>
                     <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
@@ -1843,7 +1835,7 @@
                 </div>`;
 
             showModal(title, formHtml, footer);
-            updateDynamicFormFields(actionType, data);
+            updateDynamicFormFields(actionType, data, isEdit);
         }
         
         function toggleFullForm() {
@@ -1851,7 +1843,7 @@
             const actionType = document.getElementById('field-סוג_פעולה').value;
              const button = modalFooter.querySelector('button');
             button.textContent = isFullFormVisible ? 'הסתר שדות מיותרים' : 'הצג את כל הטופס';
-            // Repopulate form with existing data
+            
             const currentData = {};
             const formData = new FormData(modalForm);
             for(let [key, value] of formData.entries()) {
@@ -1860,13 +1852,13 @@
             updateDynamicFormFields(actionType, currentData); 
         }
 
-        function updateDynamicFormFields(actionType, data = {}) {
+        function updateDynamicFormFields(actionType, data = {}, forceShowAll = false) {
             const container = document.getElementById('dynamic-fields-container');
             if (!container) return;
             
             let fieldsHtml = '';
-            const showDropped = isFullFormVisible || actionType === 'הורדה' || actionType === 'החלפה';
-            const showPickedUp = isFullFormVisible || actionType === 'העלאה' || actionType === 'החלפה';
+            const showDropped = forceShowAll || isFullFormVisible || actionType === 'הורדה' || actionType === 'החלפה';
+            const showPickedUp = forceShowAll || isFullFormVisible || actionType === 'העלאה' || actionType === 'החלפה';
 
             if (showDropped) {
                 fieldsHtml += `<div class="form-group">
@@ -1948,25 +1940,28 @@
             const isNew = idx === null;
             const action = isNew ? "addRow" : "updateRow";
             const formData = new FormData(modalForm);
-            const newRowData = {};
             
-            headers.forEach(h => {
-                // If a field from initialData is not in the form, preserve it
-                if (initialData && initialData[h] && !formData.has(h)) {
-                    newRowData[h] = initialData[h];
-                } else {
-                    newRowData[h] = formData.get(h) || (initialData ? initialData[h] : null) || "";
-                }
-            });
-            
-            const wasPending = initialData && initialData['סטטוס ביצוע'] === 'ממתינה לביצוע';
-            if (wasPending && (newRowData['מספר תעודה'] || newRowData['תעודה'])) {
-                newRowData['סטטוס ביצוע'] = 'בוצע';
+            const finalRowData = isNew ? { ...initialData } : { ...rawData[idx] };
+
+            for (let [key, value] of formData.entries()) {
+                finalRowData[key] = value;
             }
-            
+
+            const wasPending = (isNew ? initialData : rawData[idx])?.['סטטוס ביצוע'] === 'ממתינה לביצוע';
+            if (wasPending && (finalRowData['מספר תעודה'] || finalRowData['תעודה'])) {
+                finalRowData['סטטוס ביצוע'] = 'בוצע';
+            }
+
+            if (isNew && !initialData) {
+                finalRowData['סטטוס ביצוע'] = 'בוצע';
+                finalRowData['סטטוס'] = 'זמין';
+            }
+
+            const rowAsArray = headers.map(h => finalRowData[h] || "");
+
             const payload = { 
                 action: action, 
-                row: headers.map(h => newRowData[h] || "")
+                row: rowAsArray
             };
             if (!isNew) {
                 payload.index = idx;
@@ -1986,8 +1981,8 @@
                 }
                 showToast(r.message || "הפעולה בוצעה בהצלחה", "success");
                 
-                if (wasPending && newRowData['סטטוס ביצוע'] === 'בוצע' && newRowData['הזמנה מקושרת']) {
-                    const linkedDocId = newRowData['הזמנה מקושרת'];
+                if (wasPending && finalRowData['סטטוס ביצוע'] === 'בוצע' && finalRowData['הזמנה מקושרת']) {
+                    const linkedDocId = finalRowData['הזמנה מקושרת'];
                     const linkedOrderIndex = rawData.findIndex(o => o['מספר תעודה'] == linkedDocId);
                     if (linkedOrderIndex > -1) {
                          await apiPost({ action: "closeOrder", index: linkedOrderIndex });
@@ -2112,6 +2107,12 @@
 
         // Initial load
         document.addEventListener('DOMContentLoaded', function() {
+            // DEFAULTS
+            Chart.defaults.font.family = "Assistant";
+            Chart.defaults.font.weight = "bold";
+            Chart.defaults.font.size = 14;
+            Chart.defaults.color = "#333";
+            
             loadAlertSettings();
             refresh();
             loadDevNotes();
