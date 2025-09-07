@@ -29,6 +29,12 @@
             --status-overdue-text: #c5221f;
         }
 
+        @keyframes pulse-red {
+            0% { background-color: var(--card); }
+            50% { background-color: #fff5f5; }
+            100% { background-color: var(--card); }
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -137,9 +143,18 @@
 
         .toolbar {
             display: flex;
-            gap: 8px;
+            gap: 16px;
             align-items: center;
             margin-bottom: 12px;
+        }
+        
+        .filter-controls label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: var(--muted);
+            cursor: pointer;
         }
 
         .search {
@@ -156,18 +171,43 @@
         }
 
         .table th, .table td {
-            padding: 8px;
+            padding: 12px 8px;
             border-bottom: 1px solid #eef5fb;
             text-align: center;
             font-size: 14px;
             white-space: nowrap;
         }
-
+        
+        .table tbody tr {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f5faff;
+        }
+        
         .table th {
             background: #f8fbff;
             font-weight: 700;
             color: var(--brand);
         }
+        
+        /* Conditional Row Styling */
+        .row-overdue {
+            animation: pulse-red 2.5s infinite ease-in-out;
+            font-weight: 600;
+            color: var(--status-overdue-text);
+        }
+        .row-open {
+             background-color: rgba(230, 244, 234, 0.5);
+        }
+        .row-closed {
+            text-decoration: line-through;
+            color: #b0bec5;
+            background-color: #fafafa;
+        }
+
 
         /* Right panel - notifications & tools */
         .right {
@@ -296,7 +336,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            z-index: 1000;
+            z-index: 2100;
             pointer-events: none;
         }
 
@@ -441,9 +481,16 @@
             border-radius: var(--radius);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             width: 90%;
-            max-width: 500px;
+            max-width: 600px;
             transform: scale(0.95);
             transition: transform 0.3s;
+        }
+
+        .modal.modal-full-page {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            border-radius: 0;
         }
 
         .modal-overlay.show .modal {
@@ -475,9 +522,13 @@
 
         .modal-body {
             margin-bottom: 24px;
-            max-height: 60vh;
+            max-height: 70vh;
             overflow-y: auto;
             padding: 4px;
+        }
+        
+        .modal-full-page .modal-body {
+            max-height: calc(100vh - 150px);
         }
 
         .modal-footer {
@@ -507,6 +558,90 @@
             background: #fbfdff;
             font-size: 14px;
         }
+
+        /* Customer Card Styles */
+        .customer-card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .customer-card-icon {
+            font-size: 48px;
+            background: #e6f1fb;
+            color: var(--brand);
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .customer-card-title h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .customer-card-title p {
+            margin: 0;
+            color: var(--muted);
+        }
+        
+        .customer-card-actions {
+            margin-right: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .customer-card-actions .form-group {
+             margin-bottom: 0;
+        }
+
+        .customer-card-body {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .customer-card-field {
+            background: #fbfdff;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #eef5fb;
+        }
+        
+        .customer-card-field label {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 4px;
+            display: block;
+        }
+        
+        .customer-card-field p {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .map-container {
+            grid-column: 1 / -1;
+            padding: 16px;
+            border-radius: var(--radius);
+            background: #f8fbff;
+            border: 1px dashed #dbe9f7;
+            text-align: center;
+        }
+
+        .map-container p {
+            margin: 0 0 12px 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--brand);
+        }
+
     </style>
 </head>
 <body>
@@ -520,7 +655,7 @@
         </div>
 
         <div class="controls">
-            <input id="globalSearch" class="search" placeholder="חפש (מספר הזמנה, לקוח, כתובת...)" oninput="applyFilter()" />
+            <input id="globalSearch" class="search" placeholder="חפש הזמנה..." oninput="renderFilteredData()" />
             <button class="btn" onclick="refresh()">רענן</button>
             <button class="btn secondary" onclick="openNewOrder()">הזמנה חדשה</button>
             <button class="btn secondary" id="installButton" style="display:none;">התקן אפליקציה</button>
@@ -542,13 +677,13 @@
             </div>
 
             <hr style="margin:12px 0" />
-            <div style="font-weight:700;margin-bottom:6px">כלים לפיתוח</div>
+            <div style="font-weight:700;margin-bottom:6px">הערות להזמנות</div>
             <div style="font-size:13px;color:var(--muted)">
-                כאן תוכל לכתוב רעיונות, משימות או טיקט מהיר לצוות הפיתוח — לשמור ישירות בגליון כתזכורת.
+                שמור תזכורות לגבי הזמנות ספציפיות.
             </div>
-            <textarea id="devNote" class="note-area" placeholder="כתוב הערה/רשימת משימות..."></textarea>
+            <textarea id="devNote" class="note-area" placeholder="כתוב הערה..."></textarea>
             <div style="margin-top:8px; display:flex; gap:8px">
-                <button class="btn" onclick="saveDevNote()">שמור הערה</button>
+                <button class="btn" onclick="saveOrderNote()">שמור הערה</button>
                 <button class="btn secondary" onclick="loadDevNotes()">טען הערות</button>
             </div>
         </div>
@@ -557,6 +692,12 @@
             <div class="toolbar">
                 <div style="font-weight:700">טבלת הזמנות</div>
                 <div style="flex:1"></div>
+                <div class="filter-controls">
+                    <label>
+                        <input type="checkbox" id="showClosedCheckbox" onchange="renderFilteredData()">
+                        הצג הזמנות סגורות
+                    </label>
+                </div>
                 <div id="statusMsg" style="color:var(--muted);font-size:13px"></div>
             </div>
 
@@ -631,12 +772,20 @@
         // ========== CONFIG ==========
         const API_URL = "https://script.google.com/macros/s/AKfycbydmQ1jF7rL19QS_NY84Rgvzddv2awOlPyjwW4QOic1qGairdmMjJFMG0FzsFu4blqlSw/exec";
         
+        // ========== DEFAULTS ==========
+        Chart.defaults.font.family = "Heebo";
+        Chart.defaults.font.weight = "bold";
+        Chart.defaults.font.size = 14;
+        Chart.defaults.color = "#333";
+
+
         // ========== STATE ==========
         let rawData = [];
         let headers = [];
         let statusChart, timelineChart;
         let deferredPrompt = null;
         let realTimeInterval = null;
+        let showClosedOrders = false;
         const alertSettings = {
             overdue: true,
             newOrder: true,
@@ -679,15 +828,23 @@
         
         // ========== MODAL CONTROLS ==========
         const modalOverlay = document.getElementById('modalOverlay');
+        const appModal = document.getElementById('appModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalBody = document.getElementById('modalBody');
         const modalFooter = document.getElementById('modalFooter');
         const modalForm = document.getElementById('modalForm');
 
-        function showModal(title, body, footer) {
+        function showModal(title, body, footer, isFullPage = false) {
             modalTitle.innerHTML = title;
             modalBody.innerHTML = body;
             modalFooter.innerHTML = footer;
+
+            if(isFullPage) {
+                appModal.classList.add('modal-full-page');
+            } else {
+                appModal.classList.remove('modal-full-page');
+            }
+
             modalOverlay.classList.add('show');
             document.addEventListener('keydown', handleEscKey);
         }
@@ -763,38 +920,51 @@
         }
 
         // ========== CHARTS ==========
+        function updateCharts(data) {
+            if (!statusChart || !timelineChart) {
+                initCharts();
+            }
+            const statusData = prepareStatusData(data);
+            const timelineData = prepareTimelineData(data);
+
+            statusChart.data.labels = statusData.labels;
+            statusChart.data.datasets[0].data = statusData.values;
+            statusChart.update();
+
+            timelineChart.data.labels = timelineData.labels;
+            timelineChart.data.datasets[0].data = timelineData.values;
+            timelineChart.update();
+        }
+
+
         function initCharts() {
             const statusCtx = document.getElementById('statusChart').getContext('2d');
             const timelineCtx = document.getElementById('timelineChart').getContext('2d');
             
-            if (statusChart) statusChart.destroy();
-            if (timelineChart) timelineChart.destroy();
-            
-            const statusData = prepareStatusData();
-            const timelineData = prepareTimelineData();
-            
+            const initialStatusData = prepareStatusData(rawData);
             statusChart = new Chart(statusCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: statusData.labels,
+                    labels: initialStatusData.labels,
                     datasets: [{
-                        data: statusData.values,
-                        backgroundColor: ['#4caf50', '#2196f3', '#ff9800', '#f44336']
+                        data: initialStatusData.values,
+                        backgroundColor: ['#4caf50', '#2196f3', '#ff9800', '#f44336', '#90a4ae']
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { position: 'bottom', rtl: true } }
+                    plugins: { legend: { position: 'bottom', rtl: true, labels: { font: { size: 14 } } } }
                 }
             });
             
+            const initialTimelineData = prepareTimelineData(rawData);
             timelineChart = new Chart(timelineCtx, {
                 type: 'bar',
                 data: {
-                    labels: timelineData.labels,
+                    labels: initialTimelineData.labels,
                     datasets: [{
                         label: 'מספר הזמנות',
-                        data: timelineData.values,
+                        data: initialTimelineData.values,
                         backgroundColor: '#0b72b9'
                     }]
                 },
@@ -802,20 +972,20 @@
             });
         }
 
-        function prepareStatusData() {
-            const statusCount = { 'זמין': 0, 'במשלוח': 0, 'נמסר': 0, 'חורג': 0 };
-            rawData.forEach(order => {
+        function prepareStatusData(data) {
+            const statusCount = { 'פתוח': 0, 'במשלוח': 0, 'נמסר': 0, 'חורג': 0, 'סגור': 0 };
+            data.forEach(order => {
                 const status = order['סטטוס'] || '';
-                if (status.includes('זמין')) statusCount['זמין']++;
+                if (status.includes('חורג')) statusCount['חורג']++;
+                else if (status.includes('סגור')) statusCount['סגור']++;
                 else if (status.includes('משלוח')) statusCount['במשלוח']++;
                 else if (status.includes('נמסר')) statusCount['נמסר']++;
-                else if (status.includes('חורג')) statusCount['חורג']++;
-                else statusCount['זמין']++;
+                else statusCount['פתוח']++;
             });
             return { labels: Object.keys(statusCount), values: Object.values(statusCount) };
         }
 
-        function prepareTimelineData() {
+        function prepareTimelineData(data) {
             const months = [];
             const monthCount = {};
             const now = new Date();
@@ -825,7 +995,7 @@
                 months.push(monthKey);
                 monthCount[monthKey] = 0;
             }
-            rawData.forEach(order => {
+            data.forEach(order => {
                 if (order['תאריך']) {
                     try {
                         const orderDate = new Date(order['תאריך']);
@@ -837,7 +1007,15 @@
             return { labels: months, values: months.map(m => monthCount[m] || 0) };
         }
 
-        // ========== STATUS BADGES ==========
+        // ========== STATUS HELPERS ==========
+        function getStatusKey(status) {
+            if (!status) return 'open';
+            status = String(status).toLowerCase();
+            if (status.includes('חורג')) return 'overdue';
+            if (status.includes('סגור')) return 'closed';
+            return 'open';
+        }
+
         function getStatusBadge(status) {
             if (!status) return '';
             status = String(status);
@@ -845,8 +1023,12 @@
             if (status.includes('משלוח')) { badgeClass = 'status-in-transit'; badgeText = 'במשלוח'; }
             else if (status.includes('נמסר')) { badgeClass = 'status-delivered'; badgeText = 'נמסר'; }
             else if (status.includes('חורג')) { badgeClass = 'status-overdue'; badgeText = 'חורג'; }
+             else if (status.includes('סגור')) { badgeClass = 'status-delivered'; badgeText = 'סגור'; }
             return `<span class="status-badge ${badgeClass}">${badgeText}</span>`;
         }
+        
+        const statusOptions = ['זמין', 'במשלוח', 'נמסר', 'סגור', 'חורג'];
+
 
         // ========== API HELPERS ==========
         async function apiGet(action) {
@@ -886,78 +1068,93 @@
 
         // ========== UI RENDERERS ==========
         function renderTable(data, hdrs) {
-            headers = hdrs;
             const thead = document.getElementById("tHead");
             const tbody = document.getElementById("tBody");
             thead.innerHTML = "";
             tbody.innerHTML = "";
 
             if (!hdrs || hdrs.length === 0) {
-                thead.innerHTML = "<tr><th>אין נתונים להצגה. יש לוודא שהוגדרו כותרות בגליון 'מעקב'.</th></tr>";
+                thead.innerHTML = "<tr><th>אין נתונים להצגה.</th></tr>";
                 return;
             }
 
             thead.innerHTML = "<tr>" + hdrs.map(h => `<th>${h}</th>`).join("") + "<th>סטטוס</th><th>פעולות</th></tr>";
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${hdrs.length + 2}" style="padding: 20px; color: var(--muted);">לא נמצאו הזמנות התואמות לסינון.</td></tr>`;
+                return;
+            }
 
-            data.forEach((rowObj, idx) => {
+            data.forEach((rowObj) => {
+                const original_idx = rawData.indexOf(rowObj);
+                const statusKey = getStatusKey(rowObj['סטטוס']);
+                const rowClass = `row-${statusKey}`;
+
                 const cells = hdrs.map(h => {
                     const v = rowObj[h];
                     if (looksLikeDateHeader(h)) return `<td>${formatDateTime(v)}</td>`;
-                    if (String(h).includes("טלפון") && v) return `<td><a href="tel:${v}">${v}</a></td>`;
-                    if (String(h).includes("כתובת") && v) return `<td><button class="btn secondary" style="padding: 4px 8px; font-size: 12px;" onclick="openMap('${encodeURIComponent(v)}')">מפה</button></td>`;
+                    if (String(h).includes("טלפון") && v) return `<td><a href="tel:${v}" onclick="event.stopPropagation()">${v}</a></td>`;
+                    if (String(h).includes("כתובת") && v) return `<td><button class="btn secondary" style="padding: 4px 8px; font-size: 12px;" onclick="event.stopPropagation(); showMap('${encodeURIComponent(v)}')">מפה</button></td>`;
                     return `<td>${v === null || v === undefined ? "" : v}</td>`;
                 }).join("");
 
                 const statusCell = `<td>${getStatusBadge(rowObj['סטטוס'])}</td>`;
                 
                 const actionCell = `<td style="display: flex; gap: 4px; justify-content: center; align-items:center;">
-                    <button class="btn secondary" style="padding: 6px 8px;" title="פרטים" onclick="showDetail(${idx})">👁️</button>
-                    <button class="btn" style="padding: 6px 8px;" title="ערוך" onclick="editRowPrompt(${idx})">✏️</button>
-                    <button class="btn secondary" style="padding: 6px 8px;" title="שכפל" onclick="duplicateRow(${idx})">📋</button>
-                    <button class="btn danger" style="padding: 6px 8px;" title="מחק" onclick="deleteRowByIdx(${idx})">🗑️</button>
+                    <button class="btn" style="padding: 6px 8px;" title="ערוך" onclick="event.stopPropagation(); editRowPrompt(${original_idx})">✏️</button>
+                    <button class="btn secondary" style="padding: 6px 8px;" title="שכפל" onclick="event.stopPropagation(); duplicateRow(${original_idx})">📋</button>
+                    <button class="btn danger" style="padding: 6px 8px;" title="מחק" onclick="event.stopPropagation(); deleteRowByIdx(${original_idx})">🗑️</button>
                     </td>`;
 
-                tbody.innerHTML += `<tr>${cells}${statusCell}${actionCell}</tr>`;
+                const rowHtml = document.createElement('tr');
+                rowHtml.className = rowClass;
+                rowHtml.onclick = () => showCustomerCard(original_idx);
+                rowHtml.innerHTML = `${cells}${statusCell}${actionCell}`;
+                tbody.appendChild(rowHtml);
             });
+        }
+        
+        function renderFilteredData() {
+            const searchTerm = document.getElementById("globalSearch").value.trim().toLowerCase();
+            const showClosed = document.getElementById("showClosedCheckbox").checked;
+
+            let filteredData = rawData;
+
+            if (!showClosed) {
+                filteredData = filteredData.filter(r => getStatusKey(r['סטטוס']) !== 'closed');
+            }
+
+            if (searchTerm) {
+                filteredData = filteredData.filter(r => {
+                    return Object.values(r).some(v => String(v || "").toLowerCase().includes(searchTerm));
+                });
+            }
+            
+            renderTable(filteredData, headers);
+            updateCharts(filteredData);
         }
 
         // ========== KPI + ALERTS ==========
         function computeKPIs(data, hdrs) {
             const total = data.length;
-            const statusField = hdrs.find(h => String(h).includes("סטטוס")) || hdrs[hdrs.length-1];
-            const dateField = hdrs.find(h => String(h).includes("סיום"));
-
-            const open = data.filter(r => {
-                const s = statusField ? String(r[statusField] || "").toLowerCase() : "";
-                return s !== "סגור" && s !== "closed" && s !== "סגורה";
-            }).length;
-            
-            let overdue = [];
-            if (dateField) {
-                const today = new Date(); 
-                today.setHours(0, 0, 0, 0);
-                overdue = data.filter(r => {
-                    const v = r[dateField];
-                    if (!v) return false;
-                    const d = new Date(v);
-                    if (isNaN(d.getTime())) return false;
-                    d.setHours(0,0,0,0);
-                    const isOpen = (String(r[statusField] || "").toLowerCase() !== "סגור");
-                    return isOpen && d < today;
-                });
-            }
+            const openAndOverdue = data.filter(r => getStatusKey(r['סטטוס']) !== 'closed');
+            const openCount = openAndOverdue.length;
+            const overdueCount = data.filter(r => getStatusKey(r['סטטוס']) === 'overdue').length;
 
             document.getElementById("kTotal").innerText = total;
-            document.getElementById("kOpen").innerText = open;
-            document.getElementById("kOver").innerText = overdue.length;
+            document.getElementById("kOpen").innerText = openCount;
+            document.getElementById("kOver").innerText = overdueCount;
 
+            const overdueOrders = data.filter(r => getStatusKey(r['סטטוס']) === 'overdue');
             const alerts = document.getElementById("alerts");
             alerts.innerHTML = "";
-            if (overdue.length === 0) {
+
+            if (overdueOrders.length === 0) {
                 alerts.innerHTML = "<div style='color:var(--muted)'>אין חריגות</div>";
             } else {
-                overdue.slice(0, 6).forEach(o => {
+                overdueOrders.slice(0, 6).forEach(o => {
                     const title = (o["שם לקוח"] || o["לקוח"] || "לקוח לא ידוע");
+                    const dateField = headers.find(h => String(h).includes("סיום"));
                     const end = formatDateTime(o[dateField]);
                     alerts.innerHTML += `<div class="alert"><div style="font-weight:700">${title}</div><div style="font-size:13px">תאריך סיום חורג: ${end}</div></div>`;
                     if (alertSettings.overdue) {
@@ -967,6 +1164,7 @@
             }
         }
 
+
         // ========== ACTIONS ==========
         async function refresh() {
             const statusMsg = document.getElementById("statusMsg");
@@ -975,10 +1173,10 @@
                 const resp = await apiGet("getData");
                 if (resp.status === "success") {
                     rawData = resp.data || [];
-                    const currentHeaders = resp.headers || (rawData[0] ? Object.keys(rawData[0]) : []);
-                    renderTable(rawData, currentHeaders);
-                    computeKPIs(rawData, currentHeaders);
-                    initCharts();
+                    headers = resp.headers || (rawData[0] ? Object.keys(rawData[0]) : []);
+                    if (!statusChart) initCharts();
+                    renderFilteredData();
+                    computeKPIs(rawData, headers);
                     statusMsg.innerText = `נטענו ${rawData.length} שורות. עודכן לאחרונה: ${new Date().toLocaleTimeString('he-IL')}`;
                 } else {
                     statusMsg.innerText = "שגיאה: " + resp.message;
@@ -989,30 +1187,95 @@
                 showToast("שגיאת רשת. ודא שה-API_URL נכון והשרת פועל.\n" + err.message, "error");
             }
         }
+        
+        function showCustomerCard(idx) {
+            const order = rawData[idx];
+            if (!order) return;
 
-        function showDetail(idx) {
-            const data = rawData[idx];
-            if (!data) return;
+            const clientName = order['שם לקוח'] || 'אלמוני';
+            const docNum = order['מספר תעודה'] || 'N/A';
+            const clientNum = order['מספר לקוח'] || 'N/A';
+            const address = order['כתובת'] || 'לא צוינה';
+            const currentStatus = order['סטטוס'] || '';
             
-            let body = '';
-            for (const k in data) {
-                const v = looksLikeDateHeader(k) ? formatDateTime(data[k]) : data[k];
-                body += `<div class="form-group">
-                    <label>${k}</label>
-                    <div style="font-weight:600; font-size:16px; padding: 8px; background: #f8fbff; border-radius: 6px;">${v || '—'}</div>
-                </div>`;
+            const title = ``;
+            
+            const statusDropdown = statusOptions.map(s => `<option value="${s}" ${s === currentStatus ? 'selected' : ''}>${s}</option>`).join('');
+
+            let body = `
+                <div class="customer-card-header">
+                    <div class="customer-card-icon">👤</div>
+                    <div class="customer-card-title">
+                        <h2>${clientName}</h2>
+                        <p>תעודה: ${docNum} | מספר לקוח: ${clientNum}</p>
+                    </div>
+                    <div class="customer-card-actions">
+                        <div class="form-group">
+                            <label>שנה סטטוס</label>
+                            <select onchange="updateOrderStatus(${idx}, this.value)">${statusDropdown}</select>
+                        </div>
+                        <button class="btn secondary" title="שכפל" onclick="duplicateRow(${idx})">📋</button>
+                        <button class="btn danger" title="מחק" onclick="deleteRowByIdx(${idx})">🗑️</button>
+                    </div>
+                </div>
+                <div class="customer-card-body">
+            `;
+            
+            headers.forEach(h => {
+                if (h.toLowerCase().includes('כתובת')) return; 
+                body += `<div class="customer-card-field">
+                            <label>${h}</label>
+                            <p>${order[h] || '—'}</p>
+                         </div>`;
+            });
+            
+            body += `
+                <div class="map-container">
+                    <p>${address}</p>
+                    <button class="btn" onclick="showMap('${encodeURIComponent(address)}')">פתח מפה וניווט</button>
+                </div>
+            </div>`;
+
+            const footer = `<button type="button" class="btn secondary" onclick="closeModal()">סגור</button>`;
+            
+            showModal(title, body, footer, true);
+        }
+
+        function showMap(addressQuery) {
+            const title = "תצוגת מפה";
+            const body = `<iframe 
+                            width="100%" 
+                            height="450" 
+                            style="border:0" 
+                            loading="lazy" 
+                            allowfullscreen 
+                            src="https://www.google.com/maps?q=${addressQuery}&output=embed">
+                          </iframe>`;
+            const footer = `<button class="btn secondary" onclick="closeModal()">סגור מפה</button>`;
+            showModal(title, body, footer);
+        }
+
+        async function updateOrderStatus(idx, newStatus) {
+            const statusHeaderIndex = headers.indexOf('סטטוס');
+
+            if (statusHeaderIndex === -1) {
+                showToast("שגיאה: לא נמצאה עמודת סטטוס.", "error");
+                return;
             }
             
-            const footer = `
-                <button type="button" class="btn secondary" onclick="closeModal()">סגור</button>
-                <button type="button" class="btn" onclick="sendWhatsApp(${idx})">שלח WhatsApp</button>`;
+            const newRowArray = headers.map(h => rawData[idx][h]);
+            newRowArray[statusHeaderIndex] = newStatus;
             
-            showModal('פרטי הזמנה', body, footer);
+            try {
+                const resp = await apiPost({ action: "updateRow", index: idx, row: newRowArray });
+                showToast(`סטטוס עודכן ל: ${newStatus}`, 'success');
+                await refresh(); 
+                closeModal();
+            } catch (e) {
+                showToast("שגיאה בעדכון הסטטוס: " + e.message, "error");
+            }
         }
 
-        function openMap(q) {
-            window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, "_blank");
-        }
 
         function editRowPrompt(idx) {
             const originalRow = rawData[idx];
@@ -1024,10 +1287,19 @@
                 const isDateField = looksLikeDateHeader(h);
                 const inputType = isDateField ? 'date' : 'text';
                 const displayValue = isDateField && val ? new Date(val).toISOString().split('T')[0] : val;
+                
+                let controlHtml;
+                if (h === 'סטטוס') {
+                    controlHtml = `<select id="field-סטטוס" name="סטטוס" class="form-control">`;
+                    controlHtml += statusOptions.map(s => `<option value="${s}" ${s === val ? 'selected' : ''}>${s}</option>`).join('');
+                    controlHtml += `</select>`;
+                } else {
+                    controlHtml = `<input type="${inputType}" id="field-${h}" name="${h}" value="${displayValue}" class="form-control">`;
+                }
 
                 formHtml += `<div class="form-group">
                     <label for="field-${h}">${h}</label>
-                    <input type="${inputType}" id="field-${h}" name="${h}" value="${displayValue}" class="form-control">
+                    ${controlHtml}
                 </div>`;
             });
             
@@ -1044,29 +1316,10 @@
             const originalRow = rawData[idx];
             if (!originalRow) return;
 
-            let formHtml = '';
-            headers.forEach(h => {
-                const val = originalRow[h] || '';
-                const isDateField = looksLikeDateHeader(h);
-                const inputType = isDateField ? 'date' : 'text';
-                const displayValue = isDateField && val ? new Date(val).toISOString().split('T')[0] : val;
-
-                formHtml += `<div class="form-group">
-                    <label for="field-${h}">${h}</label>
-                    <input type="${inputType}" id="field-${h}" name="${h}" value="${displayValue}" class="form-control">
-                </div>`;
-            });
-
-            modalForm.onsubmit = () => handleFormSubmit(null); // Submit as a new row
-
-            const footer = `
-                <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
-                <button type="submit" class="btn">צור הזמנה משוכפלת</button>`;
-
-            showModal('שכפול הזמנה', formHtml, footer);
+            openNewOrder(originalRow);
         }
 
-        function openNewOrder() {
+        function openNewOrder(initialData = null) {
             if (!headers || headers.length === 0) {
                 showToast("לא ניתן להוסיף הזמנה. יש להגדיר כותרות בגליון תחילה.", "warning");
                 return;
@@ -1074,21 +1327,32 @@
 
             let formHtml = '';
             headers.forEach(h => {
+                const val = initialData ? (initialData[h] || '') : '';
                 const isDateField = looksLikeDateHeader(h);
                 const inputType = isDateField ? 'date' : 'text';
+                const displayValue = isDateField && val ? new Date(val).toISOString().split('T')[0] : val;
+
+                const controlHtml = (h === 'סטטוס')
+                    ? `<select id="field-סטטוס" name="סטטוס" class="form-control">
+                         ${statusOptions.map(s => `<option value="${s}" ${s === val ? 'selected' : ''}>${s}</option>`).join('')}
+                       </select>`
+                    : `<input type="${inputType}" id="field-${h}" name="${h}" value="${displayValue}" class="form-control">`;
+                
                 formHtml += `<div class="form-group">
                     <label for="field-${h}">${h}</label>
-                    <input type="${inputType}" id="field-${h}" name="${h}" value="" class="form-control">
+                    ${controlHtml}
                 </div>`;
             });
 
             modalForm.onsubmit = () => handleFormSubmit(null);
 
+            const title = initialData ? 'שכפול הזמנה' : 'הזמנה חדשה';
+            const buttonText = initialData ? 'צור הזמנה משוכפלת' : 'צור הזמנה';
             const footer = `
                 <button type="button" class="btn secondary" onclick="closeModal()">ביטול</button>
-                <button type="submit" class="btn">צור הזמנה</button>`;
+                <button type="submit" class="btn">${buttonText}</button>`;
 
-            showModal('הזמנה חדשה', formHtml, footer);
+            showModal(title, formHtml, footer);
         }
 
         async function handleFormSubmit(idx) {
@@ -1174,13 +1438,34 @@
         }
 
         // Dev notes
-        async function saveDevNote(){
+        async function saveOrderNote() {
             const text = document.getElementById("devNote").value.trim();
             if (!text) { 
                 showToast("יש לכתוב תוכן להערה.", "warning");
                 return; 
             }
-            const note = { author: "מנהל", text: text };
+            
+            const orderId = prompt("לאיזה מספר הזמנה לשייך את ההערה?");
+            if (!orderId) return;
+            
+            const order = rawData.find(r => r['מספר הזמנה'] == orderId);
+            
+            if (!order) {
+                showToast(`לא נמצאה הזמנה עם המספר ${orderId}`, 'error');
+                return;
+            }
+
+            const clientName = order['שם לקוח'] || 'לא ידוע';
+            const clientNum = order['מספר לקוח'] || 'לא ידוע';
+            
+            const note = { 
+                author: "מנהל", 
+                text: text,
+                orderId: orderId,
+                clientName: clientName,
+                clientNum: clientNum
+            };
+
             try {
                 const resp = await apiPost({ action: "saveDevNote", note: note });
                 showToast(resp.message || "ההערה נשמרה", "success");
@@ -1190,11 +1475,15 @@
             }
         }
 
+
         async function loadDevNotes(){
             try {
                 const resp = await apiGet("getDevNotes");
                 if (resp.status === "success" && resp.notes && resp.notes.length) {
-                    const latest = resp.notes.slice(-5).reverse().map(n => `${formatDateTime(n.timestamp)} — ${n.author}: ${n.note}`).join("\n\n");
+                    const latest = resp.notes.slice(-5).reverse().map(n => {
+                        const context = n.orderId ? `[הזמנה ${n.orderId} - ${n.clientName}]` : '[כללי]';
+                        return `${formatDateTime(n.timestamp)} ${context}: ${n.note}`;
+                    }).join("\n\n");
                     document.getElementById("devNote").value = latest;
                 } else {
                     document.getElementById("devNote").value = "";
@@ -1203,19 +1492,6 @@
             } catch(e) {
                 showToast("שגיאה בטעינת הערות: " + e.message, "error");
             }
-        }
-
-        // Search filter
-        function applyFilter(){
-            const q = document.getElementById("globalSearch").value.trim().toLowerCase();
-            if (!q) { 
-                renderTable(rawData, headers); 
-                return; 
-            }
-            const filtered = rawData.filter(r => {
-                return Object.values(r).some(v => String(v || "").toLowerCase().includes(q));
-            });
-            renderTable(filtered, headers);
         }
 
         // Initial load
