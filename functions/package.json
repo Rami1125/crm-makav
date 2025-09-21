@@ -3,12 +3,7 @@
   "description": "Cloud Functions for Firebase",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint .",
-    "serve": "firebase emulators:start --only functions",
-    "shell": "firebase functions:shell",
-    "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:logs"
+    "deploy": "firebase deploy --only functions"
   },
   "engines": {
     "node": "20"
@@ -18,11 +13,5 @@
     "firebase-functions": "^5.0.1",
     "google-auth-library": "^9.11.0",
     "google-spreadsheet": "^4.1.2"
-  },
-  "devDependencies": {
-    "eslint": "^8.57.0",
-    "eslint-config-google": "^0.14.0"
-  },
-  "private": true
+  }
 }
-
