@@ -44,9 +44,9 @@
             try {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
-                    statusMsg.textContent = 'מאמת טוקן...';
+                    statusMsg.textContent = 'client_email": "firebase-adminsdk-fbsvc@hsaban-644c5.iam.gserviceaccount.com';
                     // Replace with your VAPID key from Firebase Project Settings > Cloud Messaging
-                    const fcmToken = await getToken(messaging, { vapidKey: 'BDSmXN7zQJ...YOUR_VAPID_KEY...g9xE' });
+                    const fcmToken = await getToken(messaging, { vapidKey: 'ad047573d15e776ab9c551d0ae94ff47bc850288' });
                     
                     if (fcmToken) {
                         const tokenRef = doc(db, "dashboardTokens", fcmToken);
